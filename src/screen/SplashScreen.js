@@ -7,7 +7,9 @@ const SplashScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (user) {
+     
       navigation.replace('Home');
+
     } else {
       navigation.replace('Login');
     }
@@ -19,7 +21,7 @@ const SplashScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.welcomeText}>Welcome to My App</Text>
+      <Text style={styles.welcomeText}>wite</Text>
       <ActivityIndicator size="large" color="#0000ff" />
     </View>
   );

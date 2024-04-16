@@ -7,6 +7,7 @@ import SplashScreen from './src/screen/SplashScreen';
 import LoginScreen from './src/screen/LoginScreen';
 import RegisterScreen from './src/screen/RegisterScreen';
 import Home from './src/screen/Home';
+import TabsScreens from './src/screen/TabsScreens';
 
 
 const Stack = createStackNavigator();
@@ -25,20 +26,27 @@ const AppNavigation = () => {
   const { user } = useAuth();
 
   return (
+   
     <Stack.Navigator>
+      
       <Stack.Screen name="Splash" component={SplashScreen} 
       options={{ headerShown: false }}
       />
       {user ? (
-        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="Home" component={Home}
+        options={{ headerShown: false }}
+         />
+        
       ) : (
         <>
+ 
   <Stack.Screen name="Login" component={LoginScreen}
         options={{ headerShown: false }}
    />
         <Stack.Screen name="Register" component={RegisterScreen}
         options={{ headerShown: false }}
          />
+     
         </>
 
       
