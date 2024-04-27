@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app, db } from '../../data/DataFirebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import {ref,uploadBytes,getDownloadURL} from'firebase/storage';
+import * as ImagePicker from 'expo-image-picker'
 
 const AuthContext = createContext();
 
@@ -59,6 +61,8 @@ export const AuthProvider = ({ children }) => {
   const signOutUser = async () => {
     await signOut(auth);
   };
+
+
 
   return (
     <AuthContext.Provider value={{ user, userName, signUp, signIn, signOutUser }}>

@@ -57,12 +57,13 @@ const Home = () => {
       )}
       <Button title="Logout" onPress={handleLogout} />
 
-      <Tab.Navigator>
+    
+       <Tab.Navigator>
         <Tab.Screen name="Profile" component={ProfileScreen} />
         <Tab.Screen name="Post" component={Post} />
         {/* Add more screens here */}
-      </Tab.Navigator>
-    </View>
+      </Tab.Navigator></View>
+    
   );
 };
 

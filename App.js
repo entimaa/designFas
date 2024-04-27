@@ -8,6 +8,7 @@ import LoginScreen from './src/screen/LoginScreen';
 import RegisterScreen from './src/screen/RegisterScreen';
 import Home from './src/screen/Home';
 import TabsScreens from './src/screen/TabsScreens';
+import Post from './src/screen/Post';
 
 
 const Stack = createStackNavigator();
@@ -33,7 +34,7 @@ const AppNavigation = () => {
       options={{ headerShown: false }}
       />
       {user ? (
-        <Stack.Screen name="Home" component={Home}
+        <Stack.Screen name="Post" component={Post}
         options={{ headerShown: false }}
          />
         
