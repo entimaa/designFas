@@ -1,14 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Post from './Post'; // Import your tab screens here
-import ProfileScreen from './ProfileScreen';
-import { View, Text, Button, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { useAuth } from '../context/AuthContext';
+import Post from './Post';
+import ProfileScreen from './ProfileScreen';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../data/DataFirebase'; // Adjust the import path as necessary
+import Massage from '../screen/Massege';
 
 const Tab = createBottomTabNavigator();
 
 const Home = () => {
-  const { user, signOutUser , userName} = useAuth();
+  const { user, signOutUser, userName } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const querySnapshot = await getDocs(collection(db, "postsDesigner"));
+        const postsData = [];
+        querySnapshot.forEach((doc) => {
+          postsData.push({ id: doc.id, ...doc.data() });
+        });
+        setPosts(postsData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching posts: ', error);
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   const handleLogout = async () => {
     await signOutUser();
@@ -16,54 +42,41 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <ScrollView
-          style={styles.container}
-        >
-          <Image style={styles.ImageUser} source={require('../pic/des1.png')} />
-          <Text style={styles.UserName}>{userName}</Text>
-          <View style={styles.userBtn}>
-            <TouchableOpacity style={styles.userButton} onPress={() => { }} >
-              <Text style={styles.userbuttontext}>Massege</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.userButton} onPress={() => { }} >
-              <Text style={styles.userbuttontext}>Follow</Text>
-            </TouchableOpacity>
-          </View>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
 
-          <View style={styles.userBtn}>
-            <View style={styles.userInfoWItems}>
-              <Text>22</Text>
-              <Text>Post</Text>
-            </View>
+            if (route.name === 'Profile') {
+              iconName = 'user';
+            } else if (route.name === 'Post') {
+              iconName = 'home';
+            } else if (route.name === 'Messege') {
+              iconName = 'envelope';
+            }
 
-            <View style={styles.userInfoWItems}>
-              <Text style={styles.userInfoWItems}>10,000</Text>
-              <Text style={styles.userInfoWItems}>Followers</Text>
-            </View>
-
-            <View>
-              <Text style={styles.userInfoWItems}>100</Text>
-              <Text style={styles.userInfoWItems}>following</Text>
-            </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-
-      {user ? (
-        <Text style={styles.welcomeText}>Welcome, {user.email}</Text>
-      ) : (
-        <Text style={styles.welcomeText}>Welcome</Text>
-      )}
-      <Button title="Logout" onPress={handleLogout} />
-
-    
-       <Tab.Navigator>
-        <Tab.Screen name="Profile" component={ProfileScreen} />
-        <Tab.Screen name="Post" component={Post} />
-        {/* Add more screens here */}
-      </Tab.Navigator></View>
-    
+            return <Icon name={iconName} size={size} color={color} />;
+          },
+          tabBarBadgeStyle: { backgroundColor: 'yellow' }
+        })}
+      >
+        <Tab.Screen 
+          name="Profile" 
+          component={ProfileScreen} 
+          options={{
+            headerTitle: 'Profile',
+          }}
+        />
+        <Tab.Screen 
+          name="Post" 
+          component={Post} 
+        />
+        <Tab.Screen 
+          name="Messege" 
+          component={Massage} 
+        />
+      </Tab.Navigator>
+    </View>
   );
 };
 
@@ -71,24 +84,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 20
+  },
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    padding: 20,
+    alignItems: 'center',
   },
   ImageUser: {
     height: 160,
     width: 160,
-    borderRadius: 89
+    borderRadius: 80,
   },
   UserName: {
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: 10,
+    textAlign: 'center',
   },
   userBtn: {
     flexDirection: "row",
     justifyContent: 'space-around',
-    width: '70%', // Control the space between the message and follow boxes:
-    marginVertical: 20
+    width: '70%',
+    marginVertical: 20,
   },
   userButton: {
     borderColor: '#2e64e4',
@@ -96,23 +116,53 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    marginHorizontal: 8
+    marginHorizontal: 8,
   },
   userbuttontext: {
-    color: '#2e64e4'
+    color: '#000',
   },
-  userInfoW: {
-
+  userStats: {
+    flexDirection: "row",
+    justifyContent: 'space-around',
+    width: '100%',
   },
   userInfoWItems: {
-    justifyContent: 'center',
+    alignItems: 'center',
   },
-  userinfoT: {
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#888',
+  },
+  postCardContainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f8f8f8',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+  welcomeText: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 5,
     textAlign: 'center',
-  }
+  },
+  logoutContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
 });
 
 export default Home;

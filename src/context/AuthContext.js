@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app, db } from '../../data/DataFirebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc } from 'firebase/firestore';
 import {ref,uploadBytes,getDownloadURL} from'firebase/storage';
 import * as ImagePicker from 'expo-image-picker'
 
@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
   const auth = getAuth(app);
 
   useEffect(() => {
-    // مراقبة حالة المصادقة
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
 
@@ -54,6 +53,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+    /*let collectionPath;
+if (type === 'Designer') {
+  collectionPath = 'userDesigner';
+} else {
+  collectionPath = 'userClient';
+} */
+
   const signIn = async (email, password) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
@@ -61,6 +67,23 @@ export const AuthProvider = ({ children }) => {
   const signOutUser = async () => {
     await signOut(auth);
   };
+
+
+
+  //add post:
+  //const collectionPath = type === 'Designer' ? 'userDesigner' : 'userClient';
+  
+  
+
+/* 
+  const addPost = async (userId) => {
+    try {
+      await addDoc(collection(db, 'postDesigner'), postData);
+      console.log('Post added successfully.');
+    } catch (error) {
+      console.error('Error adding post:', error.message);
+    }
+  };*/
 
 
 

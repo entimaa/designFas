@@ -44,6 +44,7 @@ const RegisterScreen = ({ navigation }) => {
     }
   ];
 
+
   const handleRegister = async () => {
     setEmailError("");
     setPasswordError("");

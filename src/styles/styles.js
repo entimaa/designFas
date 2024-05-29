@@ -76,9 +76,9 @@ export  const styles = StyleSheet.create({
     },
     image: {
       width: width * 0.7,
-      height: width * 0.7,
+      height: width * 0.9,
       resizeMode: 'cover',
-      borderRadius: 40,
+      
     },
     radioText:{
       fontSize:15

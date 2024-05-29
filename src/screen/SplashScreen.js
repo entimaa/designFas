@@ -8,7 +8,7 @@ const SplashScreen = ({ navigation }) => {
   useEffect(() => {
     if (user) {
      //Post -- Home
-      navigation.replace('Post');
+      navigation.replace('Home');
 
     } else {
       navigation.replace('Login');

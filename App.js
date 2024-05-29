@@ -34,7 +34,7 @@ const AppNavigation = () => {
       options={{ headerShown: false }}
       />
       {user ? (
-        <Stack.Screen name="Post" component={Post}
+        <Stack.Screen name="Home" component={Home}
         options={{ headerShown: false }}
          />
         
