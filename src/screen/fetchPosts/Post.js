@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { View, Image, Button, Alert, ActivityIndicator, TextInput, FlatList, Text, StyleSheet } from "react-native";
+import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { FloatingAction } from "react-native-floating-action";
 import * as ImagePicker from "expo-image-picker";
-import { storage, db } from "../../data/DataFirebase.js";
-import { useAuth } from '../context/AuthContext';
-import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
-import { styles } from "../styles/styles.js";
-import PostCard from "./PostCard.js";
-//
+import { storage, db } from "../../../data/DataFirebase.js";
+import { useAuth } from '../../context/AuthContext.js';
+import { doc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { useNavigation } from "@react-navigation/native";
+import * as Animatable from 'react-native-animatable';
+import { Button } from 'react-native-elements';
+import Icon from 'react-native-vector-icons/FontAwesome'; // إضافة مكتبة الأيقونات
+
 const Post = () => {
-  const { user } = useAuth();
+  const navigation = useNavigation(); 
+  const { user, userName} = useAuth();
 
   const [image, setImage] = useState(null);
   const [downloadURL, setDownloadURL] = useState(null);
@@ -20,12 +23,17 @@ const Post = () => {
   const [content, setContent] = useState('');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-
+console.log(userName)
   useEffect(() => {
     const fetchPosts = async () => {
+      if (!user || !user.uid) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const querySnapshot = await getDocs(collection(db, "postsDesigner"));
+        const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", user.uid));
+        const querySnapshot = await getDocs(postsQuery);
         const postsData = [];
         querySnapshot.forEach((doc) => {
           postsData.push({ id: doc.id, ...doc.data() });
@@ -39,7 +47,7 @@ const Post = () => {
     };
 
     fetchPosts();
-  }, []);
+  }, [user]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -48,7 +56,7 @@ const Post = () => {
       aspect: [4, 3],
       quality: 1,
     });
-    if (!result.cancelled) {
+    if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
   };
@@ -60,8 +68,8 @@ const Post = () => {
       aspect: [4, 3],
       quality: 1,
     });
-    if (!result.cancelled) {
-      setImage(result.uri);
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
     }
   };
 
@@ -113,6 +121,7 @@ const Post = () => {
                 content: content,
                 imageUrl: url,
                 userId: user.uid,
+                username:userName,
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 comments: [],
@@ -128,6 +137,7 @@ const Post = () => {
                 content,
                 imageUrl: url,
                 userId: user.uid,
+                username: userName,
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 comments: [],
@@ -151,71 +161,135 @@ const Post = () => {
   const actions = [
     {
       text: "Pick Image",
-      icon: require("../pic/iconsPost/icons-photo-gallery.png"),
+      icon: <Icon name="photo" size={20} color="#fff" />, // استخدام أيقونة من المكتبة
       name: "bt_pick_image",
-      position: 1,
+      position: 2,
     },
     {
       text: "Take Photo",
-      icon: require("../pic/iconsPost/icons-camera.png"),
+      icon: <Icon name="camera" size={20} color="#fff" />, // استخدام أيقونة من المكتبة
       name: "bt_take_photo",
-      position: 2,
+      position: 1,
     },
   ];
 
+  const cancelImage = () => {
+    setImage(null);
+  };
+
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Title"
-        value={title}
-        onChangeText={setTitle}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Content"
-        value={content}
-        onChangeText={setContent}
-      />
-      <FloatingAction
-        actions={actions}
-        overlayColor="rgba(68, 74, 74, 0.6)"
-        position="left"
-        onPressItem={(name) => {
-          switch (name) {
-            case "bt_pick_image":
-              pickImage();
-              break;
-            case "bt_take_photo":
-              takeImage();
-              break;
-            default:
-              break;
-          }
-        }}
-      />
-      
       {image && <Image source={{ uri: image }} style={styles.image} />}
-      {uploading && <ActivityIndicator size="small" color="#00ff00" />}
-      <Button title="Upload Image" onPress={uploadImage} />
-      {/*
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        <FlatList
-          data={posts}
-          renderItem={({ item }) => <PostCard post4={item} />}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-        />
-      )}*/}
-
-
+      {image && (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Content"
+            value={content}
+            onChangeText={setContent}
+          />
+          {uploading ? (
+            <ActivityIndicator size="large" color="#00ff00" style={styles.activityIndicator} />
+          ) : (
+            <>
+              <Button
+                title="Upload Image"
+                onPress={uploadImage}
+                buttonStyle={styles.uploadButton}
+                titleStyle={styles.uploadButtonText}
+              />
+              <Button
+                title="Cancel"
+                onPress={cancelImage}
+                buttonStyle={styles.cancelButton}
+                titleStyle={styles.cancelButtonText}
+              />
+            </>
+          )}
+        </>
+      )}
+      {!image && (
+        <Animatable.View animation="bounceInUp" duration={860} style={styles.floatingAction}>
+          <FloatingAction
+            actions={actions}
+            color="#0C797D"
+            position="left"
+            floatingIcon={
+              <Icon name="plus" size={25} color="#fff" /> // استخدام أيقونة من المكتبة
+            }
+            distanceToEdge={{ vertical: 110, horizontal: 20 }}
+            onPressItem={(name) => {
+              switch (name) {
+                case "bt_pick_image":
+                  pickImage();
+                  break;
+                case "bt_take_photo":
+                  takeImage();
+                  break;
+                default:
+                  break;
+              }
+            }}
+          />
+        </Animatable.View>
+      )}
     </View>
-      
   );
 };
 
-//
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  image: {
+    width: '100%',
+    height: 200,
+    marginBottom: 10,
+  },
+  uploadButton: {
+    backgroundColor: '#28a745',
+    borderRadius: 5,
+    marginVertical: 10,
+  },
+  uploadButtonText: {
+    fontSize: 18,
+    color: '#fff',
+  },
+  cancelButton: {
+    backgroundColor: '#dc3545',
+    borderRadius: 5,
+    marginVertical: 10,
+  },
+  cancelButtonText: {
+    fontSize: 18,
+    color: '#fff',
+  },
+  floatingAction: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityIndicator: {
+    marginTop: 10,
+  },
+});
 
 export default Post;

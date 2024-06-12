@@ -1,18 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../data/DataFirebase'; // Adjust the import path as necessary
-import PostCard from './PostCard';
+import { View, ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
+import PostCard from '../fetchPosts/PostCard'; // Correct the import path
+import { useAuth } from '../../context/AuthContext';
+import { Button } from 'react-native-elements';
 
-const PostsSection = () => {
+const PostsSection = ({ navigation }) => {
+  const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPosts = async () => {
+      if (!user || !user.uid) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const querySnapshot = await getDocs(collection(db, "postsDesigner"));
+        const postsQuery = query(collection(db, "postsDesigner"));
+        const querySnapshot = await getDocs(postsQuery);
         const postsData = [];
         querySnapshot.forEach((doc) => {
           postsData.push({ id: doc.id, ...doc.data() });
@@ -26,7 +34,7 @@ const PostsSection = () => {
     };
 
     fetchPosts();
-  }, []);
+  }, [user]);
 
   return (
     <View style={styles.container}>
@@ -35,7 +43,7 @@ const PostsSection = () => {
       ) : (
         <FlatList
           data={posts}
-          renderItem={({ item }) => <PostCard post={item} />}
+          renderItem={({ item }) => <PostCard post={item} onPress={() => navigation.navigate('ProfileScreen', { userId: item.userId })} />}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
         />

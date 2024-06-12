@@ -2,8 +2,8 @@ import React, { useState,useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity,FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { styles } from '../styles/FeedStyles';
-import PostCard from './PostCard';
-import Posts from '../screen/posts'
+import PostCard from '../screen/fetchPosts/PostCard';
+import Posts from '../screen/fetchPosts/posts'
 
 const Massage = () => {
  

@@ -1,20 +1,27 @@
 import { StyleSheet, Dimensions } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-   // justifyContent: 'center',// in center -- all 
-    alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 20,
+    paddingTop: 5,
+    paddingHorizontal: 1,
+    justifyContent: 'flex-start',
+    paddingBottom: 50, //higth un ender
   },
   card: {
-    backgroundColor: '#f8f8',
-    width: width - 30, // Adjust width to be responsive
+    backgroundColor: '#f8f8f8',
+    width: '100%',
     marginBottom: 20,
     borderRadius: 10,
-    padding: 10,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   userInfo: {
     flexDirection: 'row',
@@ -25,89 +32,55 @@ export const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    marginRight: 10,
   },
   userText: {
     flexDirection: 'column',
-    justifyContent: 'center',
-    marginLeft: 7,
   },
   userName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    fontFamily: '', // Add a font family if required
+    color: '#000',
+    marginBottom: 5,
   },
   postTime: {
     fontSize: 12,
-    color: '#666',
+    color: '#999',
   },
-
-  postText :{
-    fontSize: 14 ,
-    paddingLeft:15,
-    paddingRight:15,
-
+  postTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
   },
-  postaimage:{
-    width: '100%', // Set the width to fill its container
-    height: 300,   // Set a fixed height of 300
-    marginTop: 15,
-
-
-  }, 
-  Line:{
-    marginTop:10,
-    width: 330,
-    borderWidth: 0.3,
-    borderColor: '#303',
+  postImage: {
+    width: '100%',
+    height: 200,
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf:'center',
-    backgroundColor: '#fff',
-
+    marginTop: 10,
   },
-  Icon :{
-    flexDirection: 'row',
-    justifyContent:'space-around',
-    padding:10
+  postContent: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
-  iconLike :{
-    flexDirection:'row',
-    justifyContent:'center',
-    borderRadius:5,
-  
-    
-
-  },
-  iconText:{
-    fontSize:12,
-    fontWeight:'bold',
-    color:'#333',
-    
+  separator: {
+    height: 1,
+    backgroundColor: '#ddd',
+    marginVertical: 15,
   },
   iconContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 6,
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
   iconButton: {
     flexDirection: 'row',
-    backgroundColor:'#88f8',
     alignItems: 'center',
-    borderWidth: 0.2,
-    borderColor: '#000',  // Border color, you can customize it
-    borderRadius: 5,
-    padding: 4,
-    margin:7,
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff', // Changed background color
-    paddingVertical: 10, // Added padding top and bottom
-  },
-  listContent: {
-    paddingHorizontal: 16, // Added horizontal padding
-    paddingTop: 10, // Added top padding
-    paddingBottom: 20,
+  iconText: {
+    fontSize: 14,
+    marginLeft: 5,
+    color: '#333',
   },
 });

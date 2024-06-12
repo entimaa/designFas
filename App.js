@@ -1,15 +1,11 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { AuthProvider, useAuth } from './src/context/AuthContext';
-import SplashScreen from './src/screen/SplashScreen';
+// App.js
 
-import LoginScreen from './src/screen/LoginScreen';
-import RegisterScreen from './src/screen/RegisterScreen';
-import Home from './src/screen/Home';
-import TabsScreens from './src/screen/TabsScreens';
-import Post from './src/screen/Post';
-
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import AuthStack from "./src/screen/navigation/AuthStack";
+import Home from "./src/screen/navigation/AppStack";
 
 const Stack = createStackNavigator();
 
@@ -27,34 +23,19 @@ const AppNavigation = () => {
   const { user } = useAuth();
 
   return (
-   
     <Stack.Navigator>
-      
-      <Stack.Screen name="Splash" component={SplashScreen} 
-      options={{ headerShown: false }}
-      />
       {user ? (
-        <Stack.Screen name="Home" component={Home}
-        options={{ headerShown: false }}
-         />
-        
+        <Stack.Screen
+          name="Home"
+          component={Home}
+          options={{ headerShown: false }}
+        />
       ) : (
-        <>
- 
-  <Stack.Screen name="Login" component={LoginScreen}
-        options={{ headerShown: false }}
-   />
-        <Stack.Screen name="Register" component={RegisterScreen}
-        options={{ headerShown: false }}
-         />
-     
-        </>
-
-      
-
-
-
-
+        <Stack.Screen
+          name="Auth"
+          component={AuthStack}
+          options={{ headerShown: false }}
+        />
       )}
     </Stack.Navigator>
   );
