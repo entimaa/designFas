@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase'; // Adjust the import path as necessary
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import PostCard from './fetchPosts/PostCard';
+import { useNavigation } from '@react-navigation/native';
 
 const ProfileScreen = () => {
   const { user, signOutUser, userName } = useAuth();
+  const navigation = useNavigation();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleted, setDeleted] = useState(true);
@@ -70,13 +72,11 @@ const ProfileScreen = () => {
           <TouchableOpacity style={styles.userBtn} onPress={handleFollow}>
             <Text style={styles.userBtnTxt}>Follow</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.userBtn}
-            onPress={() => {
-              // navigation.navigate('EditProfile');
-            }}>
+          <TouchableOpacity style={styles.userBtn} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={styles.userBtnTxt}>Edit</Text>
           </TouchableOpacity>
+       
+     
         </View>
         <View style={styles.userInfoWrapper}>
           <View style={styles.userInfoItem}>

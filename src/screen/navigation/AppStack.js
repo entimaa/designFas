@@ -1,5 +1,3 @@
-// Home.js
-
 import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, StyleSheet, Text, Alert, ActivityIndicator, Image } from "react-native";
@@ -10,10 +8,30 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../data/DataFirebase";
 import Massage from "../Massege";
 import Post from "../fetchPosts/Post";
+import { createStackNavigator } from '@react-navigation/stack';
+import EditProfile from "../EditProfile";
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-const Home = () => {
+// Create a stack for Profile
+const ProfileStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name=" " component={ProfileScreen} options={{ headerShown: false }}  />
+    <Stack.Screen name="EditProfile" component={EditProfile}  />
+  </Stack.Navigator>
+);
+
+
+
+// Create a stack for Massage
+const MassageStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="Massage" component={Massage} />
+  </Stack.Navigator>
+);
+
+const Home = ({navigation}) => {
   const { user, signOutUser, userName } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,8 +69,9 @@ const Home = () => {
         <Tab.Navigator>
           <Tab.Screen
             name="Profile"
-            component={ProfileScreen}
+            component={ProfileStack}
             options={{
+               headerShown: false ,
               tabBarLabel: "Profile",
               tabBarIcon: ({ color, size }) => (
                 <Icon name="user" size={size} color={color} />
@@ -74,7 +93,7 @@ const Home = () => {
           />
           <Tab.Screen
             name="Message"
-            component={Massage}
+            component={MassageStack}
             options={{
               tabBarLabel: "Message",
               tabBarIcon: ({ color, size }) => (
@@ -84,7 +103,6 @@ const Home = () => {
           />
         </Tab.Navigator>
       </View>
-      
     </View>
   );
 };
