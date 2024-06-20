@@ -11,7 +11,7 @@ export const validateEmail = (email) => {
   export const InfoUser =(name) =>{
     return name.length>0;//true
   }
-  
+  //ERROR  Error signing up: Firebase: Error (auth/email-already-in-use).
  
   export const getErrorText = (errorCode) => {
     switch (errorCode) {

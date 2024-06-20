@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView,Button } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView, Button } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../../data/DataFirebase'; // Adjust the import path as necessary
+import { db } from '../../data/DataFirebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import PostCard from './fetchPosts/PostCard';
-import { useNavigation } from '@react-navigation/native';
 
-const ProfileScreen = () => {
-  const { user, signOutUser, userName } = useAuth();
-  const navigation = useNavigation();
+const ProfileScreen = ({ navigation, route }) => {
+  const { user, signOutUser, userName, userType } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deleted, setDeleted] = useState(true);
-  
 
   useEffect(() => {
     const fetchPosts = async () => {
-      if (!user || !user.uid) {
-        setLoading(false);
-        return;
-      }
       setLoading(true);
       try {
-        const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", user.uid));
+        const userId = route.params ? route.params.userId : user.uid;
+        const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", userId));
         const querySnapshot = await getDocs(postsQuery);
         const postsData = [];
         querySnapshot.forEach((doc) => {
@@ -37,7 +30,7 @@ const ProfileScreen = () => {
     };
 
     fetchPosts();
-  }, [user]);
+  }, [user, route.params]);
 
   const handleLogout = async () => {
     await signOutUser();
@@ -51,36 +44,37 @@ const ProfileScreen = () => {
     alert('Follow');
   };
 
-  const handleSendFlowers = () => {
-    alert('Send Flowers');
-  };
-
   return (
     <View style={styles.container}>
-       <Button title="Logout" onPress={handleLogout} />
-
       <View style={styles.topContainer}>
         <Image
-          source={require('../pic/des1.png')}
+          source={require('../pic/AdobeStock_71662495_Preview.jpeg')}
           style={styles.userImg}
         />
-        <Text style={styles.userName}>{userName}</Text>
+        <Text style={styles.userName}>{route.params ? route.params.username : userName}</Text>
+        <Text>{route.params ? route.params.userId : user.uid}</Text>
         <View style={styles.userBtnWrapper}>
-          <TouchableOpacity style={styles.userBtn} onPress={handleSendMessage}>
-            <Text style={styles.userBtnTxt}>Message</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.userBtn} onPress={handleFollow}>
-            <Text style={styles.userBtnTxt}>Follow</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.userBtn} onPress={() => navigation.navigate('EditProfile')}>
-            <Text style={styles.userBtnTxt}>Edit</Text>
-          </TouchableOpacity>
-       
-     
+          {route.params ? (
+            <>
+              <TouchableOpacity style={styles.userBtn} onPress={handleSendMessage}>
+                <Text style={styles.userBtnTxt}>Message</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.userBtn} onPress={handleFollow}>
+                <Text style={styles.userBtnTxt}>Follow</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.userBtn} onPress={() => navigation.navigate('EditProfile')}>
+                <Text style={styles.userBtnTxt}>Edit</Text>
+              </TouchableOpacity>
+              <Button title="Logout" onPress={handleLogout} />
+            </>
+          )}
         </View>
         <View style={styles.userInfoWrapper}>
           <View style={styles.userInfoItem}>
-            <Text style={styles.userInfoTitle}>12</Text>
+            <Text style={styles.userInfoTitle}>{posts.length}</Text>
             <Text style={styles.userInfoSubTitle}>Posts</Text>
           </View>
           <View style={styles.userInfoItem}>
@@ -96,8 +90,14 @@ const ProfileScreen = () => {
       <ScrollView contentContainerStyle={styles.bottomContainer}>
         {loading ? (
           <ActivityIndicator size="large" color="#f000ff" />
+        ) : userType === 'Designer' ? (
+          posts.length > 0 ? (
+            posts.map((post) => <PostCard key={post.id} post={post} />)
+          ) : (
+            <Text style={styles.errorMessage}>No posts found.</Text>
+          )
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          <Text style={styles.errorMessage}>Only designers can view their posts.</Text>
         )}
       </ScrollView>
     </View>
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   topContainer: {
     padding: 20,
-    alignItems: 'center', // Centers the items horizontally
+    alignItems: 'center',
   },
   userImg: {
     height: 150,
@@ -165,8 +165,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
   },
-  postsContainer: {
-    width: '100%',
+  errorMessage: {
+    color: 'red',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 

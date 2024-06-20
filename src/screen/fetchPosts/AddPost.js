@@ -1,24 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text } from "react-native";
+import React, { useState } from "react";
+import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text,TouchableOpacity } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import { FloatingAction } from "react-native-floating-action";
 import * as ImagePicker from "expo-image-picker";
 import { storage, db } from "../../../data/DataFirebase.js";
 import { useAuth } from '../../context/AuthContext.js';
-import { doc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { useNavigation } from "@react-navigation/native";
-import { Button } from 'react-native-elements';
-import Animatable from "react-native-reanimated"; 
+import { doc, setDoc, collection } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import Posts from '../fetchPosts/posts'
+import { Button } from 'react-native-elements';
 
-
-const Post = () => {
-  const navigation = useNavigation(); 
+const AddPostComponent = ({ toggleModal }) => {
   const { user, userName, userType } = useAuth();
 
   const [image, setImage] = useState(null);
-  const [downloadURL, setDownloadURL] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [title, setTitle] = useState('');
@@ -83,7 +76,6 @@ const Post = () => {
         },
         async () => {
           const url = await getDownloadURL(uploadTask.snapshot.ref);
-          setDownloadURL(url);
           setUploading(false);
           Alert.alert("Upload Success", "Image uploaded successfully!");
 
@@ -105,6 +97,7 @@ const Post = () => {
               setImage(null);
               setTitle('');
               setContent('');
+              toggleModal(); // Close the modal after upload
             } catch (error) {
               console.error("Error adding document: ", error);
               Alert.alert("Post Error", "Failed to create post. Please try again later.");
@@ -120,21 +113,6 @@ const Post = () => {
       Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
     }
   };
-
-  const actions = [
-    {
-      text: "Pick Image",
-      icon: <Icon name="photo" size={20} color="#fff" />,
-      name: "bt_pick_image",
-      position: 2,
-    },
-    {
-      text: "Take Photo",
-      icon: <Icon name="camera" size={20} color="#fff" />,
-      name: "bt_take_photo",
-      position: 1,
-    },
-  ];
 
   const cancelImage = () => {
     setImage(null);
@@ -182,33 +160,19 @@ const Post = () => {
             </>
           )}
           {!image && (
-            <Animatable.View animation="bounceInUp" duration={860} style={styles.floatingAction}>
-              <FloatingAction
-                actions={actions}
-                color="#0C797D"
-                position="left"
-                floatingIcon={
-                  <Icon name="plus" size={25} color="#fff" />
-                }
-                distanceToEdge={{ vertical: 110, horizontal: 20 }}
-                onPressItem={(name) => {
-                  switch (name) {
-                    case "bt_pick_image":
-                      pickImage();
-                      break;
-                    case "bt_take_photo":
-                      takeImage();
-                      break;
-                    default:
-                      break;
-                  }
-                }}
-              />
-            </Animatable.View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={pickImage} style={styles.iconButton}>
+                <Icon name="photo" size={25} color="#fff" />
+                <Text style={styles.buttonText}>Pick Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={takeImage} style={styles.iconButton}>
+                <Icon name="camera" size={25} color="#fff" />
+                <Text style={styles.buttonText}>Take Photo</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </>
       )}
-      <Posts/>
     </View>
   );
 };
@@ -249,14 +213,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
   },
-  floatingAction: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   activityIndicator: {
     marginTop: 10,
   },
@@ -266,6 +222,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 20,
+  },
+  iconButton: {
+    alignItems: 'center',
+    backgroundColor: '#0C797D',
+    borderRadius: 5,
+    padding: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    marginTop: 5,
+  },
 });
 
-export default Post;
+export default AddPostComponent;
