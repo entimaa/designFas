@@ -2,22 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, Button, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import PostCard from './fetchPosts/PostCard';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ProfileScreen = ({ navigation, route }) => {
   const { user, signOutUser, userName, userType ,userImgUrl} = useAuth();
-  console.log(userImgUrl)
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [profileImageUrl, setProfileImageUrl] = useState(route.params?.userImgUrl || null);
+  const [profileUserName, setProfileUserName] = useState(route.params?.username || userName);
+  const [profileUserType, setProfileUserType] = useState(null);
+
   const isCurrentUser = !route.params || route.params.userId === user.uid;
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchProfileData = async () => {
       setLoading(true);
       try {
         const userId = route.params ? route.params.userId : user.uid;
+        let userDoc = await getDoc(doc(db, "userDesigner", userId));
+
+        if (!userDoc.exists()) {
+          userDoc = await getDoc(doc(db, "userClient", userId));
+        }
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setProfileImageUrl(userData.profileImageUrl || route.params?.userImgUrl || null);
+          setProfileUserName(userData.username || route.params?.username || userName);
+          setProfileUserType(userData.userType || userType);
+        } else {
+          console.error("User not found");
+        }
+
         const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", userId));
         const querySnapshot = await getDocs(postsQuery);
         const postsData = [];
@@ -32,7 +50,7 @@ const ProfileScreen = ({ navigation, route }) => {
       }
     };
 
-    fetchPosts();
+    fetchProfileData();
   }, [user, route.params]);
 
   const handleLogout = async () => {
@@ -55,11 +73,11 @@ const ProfileScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       )}
       <View style={styles.topContainer}>
-      <Image
-            style={styles.userImg}
-            source={userImgUrl ? { uri: userImgUrl } : require('../pic/avtar.png')} // Use userImgUrl or a default image
-          />
-        <Text style={styles.userName}>{route.params ? route.params.username : userName}</Text>
+        <Image
+          style={styles.userImg}
+          source={userImgUrl ? { uri: userImgUrl } : require('../pic/avtar.png')}
+        />
+        <Text style={styles.userName}>{profileUserName}</Text>
         <Text>{route.params ? route.params.userId : user.uid}</Text>
         <View style={styles.userBtnWrapper}>
           {route.params ? (
@@ -98,14 +116,12 @@ const ProfileScreen = ({ navigation, route }) => {
       <ScrollView contentContainerStyle={styles.bottomContainer}>
         {loading ? (
           <ActivityIndicator size="large" color="#f000ff" />
-        ) : userType === 'Designer' ? (
-          posts.length > 0 ? (
-            posts.map((post) => <PostCard key={post.id} post={post} />)
-          ) : (
-            <Text style={styles.errorMessage}>No posts found.</Text>
-          )
+        ) : isCurrentUser && profileUserType === 'Client' ? (
+          <Text style={styles.errorMessage}>لا يمكن نشر بوستات لأنك زبون.</Text>
+        ) : posts.length > 0 ? (
+          posts.map((post) => <PostCard key={post.id} post={post} />)
         ) : (
-          <Text style={styles.errorMessage}>Only designers can view their posts.</Text>
+          <Text style={styles.errorMessage}>No posts found.</Text>
         )}
       </ScrollView>
     </View>

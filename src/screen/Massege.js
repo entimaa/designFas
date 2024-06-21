@@ -10,7 +10,7 @@ const Massage = () => {
  
   return (
     
-  
+  <Text></Text>
     /*
     <View style={styles.container}>
       <View style={styles.card}>
@@ -50,8 +50,7 @@ const Massage = () => {
     
   
   */  
-  <Posts/>
-    );
+  );
  
 };
 

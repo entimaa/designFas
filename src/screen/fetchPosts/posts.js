@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, FlatList, StyleSheet } from 'react-native';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import PostCard from '../fetchPosts/PostCard'; // Correct the import path
 import { useAuth } from '../../context/AuthContext';
-import { Button } from 'react-native-elements';
 
 const PostsSection = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user ,userImgUrl} = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,9 +21,28 @@ const PostsSection = ({ navigation }) => {
         const postsQuery = query(collection(db, "postsDesigner"));
         const querySnapshot = await getDocs(postsQuery);
         const postsData = [];
-        querySnapshot.forEach((doc) => {
-          postsData.push({ id: doc.id, ...doc.data() });
-        });
+
+        for (const docSnap of querySnapshot.docs) {
+          const postData = docSnap.data();
+
+          // Fetch user data from userDesigner
+          let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
+          let userImgUrl = null;
+
+          // If not found in userDesigner, fetch from userClient
+          if (userDoc.exists()) {
+            userImgUrl = userDoc.data().userImgUrl;
+            console.log(userImgUrl+"-----------")
+          } else {
+            userDoc = await getDoc(doc(db, "userClient", postData.userId));
+            if (userDoc.exists()) {
+              userImgUrl = userDoc.data().profileImageUrl;
+            }
+          }
+
+          postsData.push({ id: docSnap.id, ...postData, userImgUrl });
+        }
+
         setPosts(postsData);
         setLoading(false);
       } catch (error) {

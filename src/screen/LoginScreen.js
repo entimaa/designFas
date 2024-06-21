@@ -63,10 +63,12 @@ const LoginScreen = ({ navigation }) => {
 
 
   const data = [
-    { id: 2, image: require('../pic/AdobeStock_71662495_Preview.jpeg') },
-    { id: 4, image: require('../pic/AdobeStock_401997609_Preview.jpeg') },
-    { id: 5, image: require('../pic/des5.png') },
+     { id: 5, image: require('../pic/des3.png') },
+    
+    { id: 2, image: require('../pic/des4.png') },
+   
     { id: 6, image: require('../pic/des6.png') },
+    { id: 4, image: require('../pic/des2.png') },
   ];
 
   const scrollX = useRef(new Animated.Value(0)).current;

@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../context/AuthContext';
 
 const PostCard = ({ post }) => {
   const [heartColor, setHeartColor] = useState('#000');
   const [commentColor, setCommentColor] = useState('#000');
   const navigation = useNavigation();
-  const { userType, userImgUrl } = useAuth(); // Use userImgUrl from context
-console.log(userImgUrl)
+
   const toggleHeartColor = () => {
     setHeartColor((prevColor) => (prevColor === '#000' ? 'red' : '#000'));
   };
@@ -19,7 +17,11 @@ console.log(userImgUrl)
   };
 
   const navigateToUserProfile = () => {
-    navigation.navigate('UserProfile', { userId: post.userId, username: post.username });
+    navigation.navigate('UserProfile', { 
+      userId: post.userId, 
+      username: post.username, 
+      userImgUrl: post.userImgUrl 
+    });
   };
 
   return (
@@ -28,16 +30,16 @@ console.log(userImgUrl)
         <View style={styles.userInfo}>
           <Image
             style={styles.userImg}
-            source={userImgUrl ? { uri: userImgUrl } : require('../../pic/avtar.png')} // Use userImgUrl or a default image
+            source={post.userImgUrl ? { uri: post.userImgUrl } : require('../../pic/avtar.png')}
           />
           <View style={styles.userText}>
             <TouchableOpacity onPress={navigateToUserProfile}>
               <Text style={styles.userName}>{post.username}</Text>
             </TouchableOpacity>
             <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
-            <Text style={styles.postTime}>{userType}</Text>
           </View>
         </View>
+        
         <Text style={styles.postTitle}>{post.title}</Text>
         {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
         <Text style={styles.postContent}>{post.content}</Text>

@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
         name,
         type,
         id: userId,
-        imgUrl: null, // Initialize imgUrl with null
+        userImgUrl: null, // Initialize imgUrl with null
       };
 
       await setDoc(doc(db, collectionPath, userId), userData);

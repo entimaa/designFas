@@ -15,7 +15,8 @@ import Posts from '../fetchPosts/posts'
 
 const Post = () => {
   const navigation = useNavigation(); 
-  const { user, userName, userType } = useAuth();
+  const { user, userName, userType,userImgUrl } = useAuth();
+ 
 
   const [image, setImage] = useState(null);
   const [downloadURL, setDownloadURL] = useState(null);
@@ -146,7 +147,7 @@ const Post = () => {
         <Text style={styles.errorMessage}>Only Designers can post content.</Text>
       ) : (
         <>
-          {image && <Image source={{ uri: image }} style={styles.image} />}
+          {image && <Image source={{ uri: userImgUrl }} style={styles.image} />}
           {image && (
             <>
               <TextInput
@@ -216,7 +217,7 @@ const Post = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 0.1,
     backgroundColor: '#fff',
   },
   input: {

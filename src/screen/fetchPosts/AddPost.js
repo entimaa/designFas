@@ -1,21 +1,38 @@
-import React, { useState } from "react";
-import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text,TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import * as ImagePicker from "expo-image-picker";
 import { storage, db } from "../../../data/DataFirebase.js";
 import { useAuth } from '../../context/AuthContext.js';
-import { doc, setDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, collection, getDoc } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Button } from 'react-native-elements';
 
 const AddPostComponent = ({ toggleModal }) => {
-  const { user, userName, userType } = useAuth();
-
+  const { user, userName, userType, } = useAuth();
+  const [profileImage, setProfileImage] = useState(null);
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (user && user.uid) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            setProfileImage(userDoc.data().profileImageUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching profile image: ", error);
+        }
+      }
+    };
+
+    fetchProfileImage();
+  }, [user]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -79,7 +96,7 @@ const AddPostComponent = ({ toggleModal }) => {
           setUploading(false);
           Alert.alert("Upload Success", "Image uploaded successfully!");
 
-          if (user && user.uid ) {
+          if (user && user.uid) {
             try {
               const postRef = doc(collection(db, "postsDesigner"));
               await setDoc(postRef, {
@@ -125,6 +142,7 @@ const AddPostComponent = ({ toggleModal }) => {
       ) : (
         <>
           {image && <Image source={{ uri: image }} style={styles.image} />}
+          {!image && profileImage && <Image source={{ uri: profileImage }} style={styles.image} />}
           {image && (
             <>
               <TextInput
