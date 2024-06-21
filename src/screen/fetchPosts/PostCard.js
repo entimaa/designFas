@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { useNavigation } from '@react-navigation/native'; // Import useNavigation hook from React Navigation
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 
 const PostCard = ({ post }) => {
-  const [heartColor, setHeartColor] = useState('#000'); // Initial heart icon color
-  const [commentColor, setCommentColor] = useState('#000'); // Initial comment icon color
-  const navigation = useNavigation(); // Initialize navigation hook
-  const { userType } = useAuth(); // Use userType from context
-
+  const [heartColor, setHeartColor] = useState('#000');
+  const [commentColor, setCommentColor] = useState('#000');
+  const navigation = useNavigation();
+  const { userType, userImgUrl } = useAuth(); // Use userImgUrl from context
+console.log(userImgUrl)
   const toggleHeartColor = () => {
-    setHeartColor((prevColor) => (prevColor === '#000' ? 'red' : '#000')); // Toggle color between black and red
+    setHeartColor((prevColor) => (prevColor === '#000' ? 'red' : '#000'));
   };
 
   const toggleCommentColor = () => {
-    setCommentColor((prevColor) => (prevColor === '#000' ? 'blue' : '#000')); // Toggle color between black and blue
+    setCommentColor((prevColor) => (prevColor === '#000' ? 'blue' : '#000'));
   };
 
   const navigateToUserProfile = () => {
@@ -26,7 +26,10 @@ const PostCard = ({ post }) => {
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.userInfo}>
-          <Image style={styles.userImg} source={require('../../pic/des1.png')} />
+          <Image
+            style={styles.userImg}
+            source={userImgUrl ? { uri: userImgUrl } : require('../../pic/avtar.png')} // Use userImgUrl or a default image
+          />
           <View style={styles.userText}>
             <TouchableOpacity onPress={navigateToUserProfile}>
               <Text style={styles.userName}>{post.username}</Text>

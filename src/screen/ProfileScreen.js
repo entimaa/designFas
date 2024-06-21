@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView, Button } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, Button, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import PostCard from './fetchPosts/PostCard';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ProfileScreen = ({ navigation, route }) => {
-  const { user, signOutUser, userName, userType } = useAuth();
+  const { user, signOutUser, userName, userType ,userImgUrl} = useAuth();
+  console.log(userImgUrl)
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isCurrentUser = !route.params || route.params.userId === user.uid;
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -46,11 +49,16 @@ const ProfileScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
+      {!isCurrentUser && (
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Icon name="chevron-left" size={25} color="#000" />
+        </TouchableOpacity>
+      )}
       <View style={styles.topContainer}>
-        <Image
-          source={require('../pic/AdobeStock_71662495_Preview.jpeg')}
-          style={styles.userImg}
-        />
+      <Image
+            style={styles.userImg}
+            source={userImgUrl ? { uri: userImgUrl } : require('../pic/avtar.png')} // Use userImgUrl or a default image
+          />
         <Text style={styles.userName}>{route.params ? route.params.username : userName}</Text>
         <Text>{route.params ? route.params.userId : user.uid}</Text>
         <View style={styles.userBtnWrapper}>
@@ -108,6 +116,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1,
   },
   topContainer: {
     padding: 20,

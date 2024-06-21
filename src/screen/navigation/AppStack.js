@@ -3,10 +3,10 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from "../../context/AuthContext";
 import ProfileScreen from "../ProfileScreen";
 import EditProfile from "../EditProfile";
-import UserProfile from "../UserProfile";
 import Massage from "../Massege";
 import Post from "../fetchPosts/Post";
 import AddPost from "../fetchPosts/AddPost";
@@ -23,7 +23,6 @@ const ProfileStack = () => (
         title: ' ',
         headerTitleAlign: 'center',
         headerStyle: {
-          backgroundColor: '#f4511e', 
           shadowColor: '#fff',
           elevation: 0,
         },
@@ -32,11 +31,10 @@ const ProfileStack = () => (
           <View style={{ marginLeft: 15 }}>
             <Icon name="chevron-left" size={25} color="#fff" />
           </View>
-        )
+        ),
       }} 
     />
     <Stack.Screen name="EditProfile" component={EditProfile} />
-    <Stack.Screen name="UserProfile" component={UserProfile} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
@@ -49,11 +47,13 @@ const MessageStack = () => (
 const MainStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
-    <Stack.Screen name="UserProfile" component={UserProfile} options={{ headerShown: false }} />
+    <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
-const HomeTabs = ({ navigation }) => {
+
+const HomeTabs = () => {
+  const navigation = useNavigation();
   const { user } = useAuth();
 
   const navigateToAddPost = () => {
