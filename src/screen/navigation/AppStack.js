@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
@@ -51,10 +51,9 @@ const MainStack = () => (
   </Stack.Navigator>
 );
 
-
 const HomeTabs = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, userType } = useAuth();
 
   const navigateToAddPost = () => {
     navigation.navigate('AddPost');
@@ -79,7 +78,7 @@ const HomeTabs = () => {
             name="Post"
             component={Post}
             options={{
-              headerRight: () => (
+              headerRight: userType === "Designer" ? () => (
                 <TouchableOpacity
                   style={styles.headerButton}
                   onPress={navigateToAddPost}
@@ -89,7 +88,7 @@ const HomeTabs = () => {
                     style={[styles.headerButtonIcon, { tintColor: "#007bff" }]}
                   />
                 </TouchableOpacity>
-              ),
+              ) : null,
               tabBarLabel: "Post",
               tabBarIcon: ({ color, size }) => (
                 <Image

@@ -31,6 +31,8 @@ const PostCard = ({ post }) => {
           <Image
             style={styles.userImg}
             source={post.userImgUrl ? { uri: post.userImgUrl } : require('../../pic/avtar.png')}
+            resizeMode="cover"
+            onError={(error) => console.log('Image Load Error:', error)}
           />
           <View style={styles.userText}>
             <TouchableOpacity onPress={navigateToUserProfile}>

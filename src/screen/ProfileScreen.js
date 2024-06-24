@@ -7,10 +7,10 @@ import PostCard from './fetchPosts/PostCard';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ProfileScreen = ({ navigation, route }) => {
-  const { user, signOutUser, userName, userType ,userImgUrl} = useAuth();
+  const { user, signOutUser, userName, userType, userImgUrl } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [profileImageUrl, setProfileImageUrl] = useState(route.params?.userImgUrl || null);
+  const [profileImageUrl, setProfileImageUrl] = useState(route.params?.userImgUrl || userImgUrl);
   const [profileUserName, setProfileUserName] = useState(route.params?.username || userName);
   const [profileUserType, setProfileUserType] = useState(null);
 
@@ -29,7 +29,7 @@ const ProfileScreen = ({ navigation, route }) => {
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          setProfileImageUrl(userData.profileImageUrl || route.params?.userImgUrl || null);
+          setProfileImageUrl(userData.userImgUrl || route.params?.userImgUrl || userImgUrl);
           setProfileUserName(userData.username || route.params?.username || userName);
           setProfileUserType(userData.userType || userType);
         } else {
@@ -39,9 +39,20 @@ const ProfileScreen = ({ navigation, route }) => {
         const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", userId));
         const querySnapshot = await getDocs(postsQuery);
         const postsData = [];
-        querySnapshot.forEach((doc) => {
-          postsData.push({ id: doc.id, ...doc.data() });
-        });
+        for (const docSnap of querySnapshot.docs) {
+          const postData = docSnap.data();
+          let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
+          let userImgUrl = null;
+          if (userDoc.exists()) {
+            userImgUrl = userDoc.data().userImgUrl;
+          } else {
+            userDoc = await getDoc(doc(db, "userClient", postData.userId));
+            if (userDoc.exists()) {
+              userImgUrl = userDoc.data().profileImageUrl;
+            }
+          }
+          postsData.push({ id: docSnap.id, ...postData, userImgUrl });
+        }
         setPosts(postsData);
         setLoading(false);
       } catch (error) {
@@ -75,10 +86,9 @@ const ProfileScreen = ({ navigation, route }) => {
       <View style={styles.topContainer}>
         <Image
           style={styles.userImg}
-          source={userImgUrl ? { uri: userImgUrl } : require('../pic/avtar.png')}
+          source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
         />
-        <Text style={styles.userName}>{profileUserName}</Text>
-        <Text>{route.params ? route.params.userId : user.uid}</Text>
+        <Text style={styles.userName}>{userName}</Text>
         <View style={styles.userBtnWrapper}>
           {route.params ? (
             <>
@@ -116,12 +126,14 @@ const ProfileScreen = ({ navigation, route }) => {
       <ScrollView contentContainerStyle={styles.bottomContainer}>
         {loading ? (
           <ActivityIndicator size="large" color="#f000ff" />
-        ) : isCurrentUser && profileUserType === 'Client' ? (
-          <Text style={styles.errorMessage}>لا يمكن نشر بوستات لأنك زبون.</Text>
-        ) : posts.length > 0 ? (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
         ) : (
-          <Text style={styles.errorMessage}>No posts found.</Text>
+          posts.length > 0 ? (
+            posts.map((post) => <PostCard key={post.id} post={post} />)
+          ) : profileUserType !== 'Designer' ? (
+            <Text style={styles.errorMessage}>ur not a designer , Only the designer can publish a post.. !!</Text>
+          ) : (
+            <Text style={styles.errorMessage}>No posts found.</Text>
+          )
         )}
       </ScrollView>
     </View>
@@ -135,7 +147,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 10,
+    top: 55,
     left: 10,
     zIndex: 1,
   },

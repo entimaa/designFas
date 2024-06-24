@@ -5,19 +5,15 @@ import { FloatingAction } from "react-native-floating-action";
 import * as ImagePicker from "expo-image-picker";
 import { storage, db } from "../../../data/DataFirebase.js";
 import { useAuth } from '../../context/AuthContext.js';
-import { doc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, collection, getDoc } from 'firebase/firestore';
 import { useNavigation } from "@react-navigation/native";
 import { Button } from 'react-native-elements';
-import Animatable from "react-native-reanimated"; 
 import Icon from 'react-native-vector-icons/FontAwesome';
-import Posts from '../fetchPosts/posts'
-
+import Posts from '../fetchPosts/posts';
 
 const Post = () => {
-  const navigation = useNavigation(); 
-  const { user, userName, userType,userImgUrl } = useAuth();
- 
-
+  const navigation = useNavigation();
+  const { user, userName, userType, userImgUrl } = useAuth();
   const [image, setImage] = useState(null);
   const [downloadURL, setDownloadURL] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -33,7 +29,7 @@ const Post = () => {
       quality: 1,
     });
     if (!result.cancelled) {
-      setImage(result.assets[0].uri);
+      setImage(result.uri); // Change here for updated API
     }
   };
 
@@ -45,7 +41,7 @@ const Post = () => {
       quality: 1,
     });
     if (!result.cancelled) {
-      setImage(result.assets[0].uri);
+      setImage(result.uri); // Change here for updated API
     }
   };
 
@@ -88,7 +84,7 @@ const Post = () => {
           setUploading(false);
           Alert.alert("Upload Success", "Image uploaded successfully!");
 
-          if (user && user.uid ) {
+          if (user && user.uid) {
             try {
               const postRef = doc(collection(db, "postsDesigner"));
               await setDoc(postRef, {
@@ -97,6 +93,7 @@ const Post = () => {
                 imageUrl: url,
                 userId: user.uid,
                 username: userName,
+                userImgUrl: userImgUrl, // Add user image URL to post data
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 comments: [],
@@ -183,7 +180,7 @@ const Post = () => {
             </>
           )}
           {!image && (
-            <Animatable.View animation="bounceInUp" duration={860} style={styles.floatingAction}>
+            <View style={styles.floatingAction}>
               <FloatingAction
                 actions={actions}
                 color="#0C797D"
@@ -205,11 +202,11 @@ const Post = () => {
                   }
                 }}
               />
-            </Animatable.View>
+            </View>
           )}
         </>
       )}
-      <Posts/>
+      <Posts />
     </View>
   );
 };

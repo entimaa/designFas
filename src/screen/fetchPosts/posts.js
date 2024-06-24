@@ -7,9 +7,9 @@ import { useAuth } from '../../context/AuthContext';
 
 const PostsSection = ({ navigation }) => {
   const { user ,userImgUrl} = useAuth();
+  console.log(userImgUrl)
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchPosts = async () => {
       if (!user || !user.uid) {
@@ -28,11 +28,11 @@ const PostsSection = ({ navigation }) => {
           // Fetch user data from userDesigner
           let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
           let userImgUrl = null;
+          console.log(userImgUrl)
 
           // If not found in userDesigner, fetch from userClient
           if (userDoc.exists()) {
             userImgUrl = userDoc.data().userImgUrl;
-            console.log(userImgUrl+"-----------")
           } else {
             userDoc = await getDoc(doc(db, "userClient", postData.userId));
             if (userDoc.exists()) {
@@ -44,6 +44,7 @@ const PostsSection = ({ navigation }) => {
         }
 
         setPosts(postsData);
+        console.log(userImgUrl+"==")
         setLoading(false);
       } catch (error) {
         console.error('Error fetching posts: ', error);
