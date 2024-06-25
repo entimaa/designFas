@@ -17,22 +17,7 @@ const AddPostComponent = ({ toggleModal }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (user && user.uid) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            setProfileImage(userDoc.data().profileImageUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching profile image: ", error);
-        }
-      }
-    };
-
-    fetchProfileImage();
-  }, [user]);
+  
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({

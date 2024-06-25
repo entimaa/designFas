@@ -4,13 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; // Import 
 import {getFirestore} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 const firebaseConfig = {
-  apiKey: "AIzaSyAlc2yIkMu5ws_pgiZbvetC4NzBZv23Nps",
-  authDomain: "designfashoin.firebaseapp.com",
-  projectId: "designfashoin",
-  storageBucket: "designfashoin.appspot.com",
-  messagingSenderId: "967210178253",
-  appId: "1:967210178253:web:c52459540e6ef9dc197b84",
-  measurementId: "G-JEX4QNJ5CT"
+  apiKey: "AIzaSyAwj0_EIVLJzu_2W2f_amHDhTM_dJNqeyg",
+  authDomain: "designfashoin-76577.firebaseapp.com",
+  projectId: "designfashoin-76577",
+  storageBucket: "designfashoin-76577.appspot.com",
+  messagingSenderId: "548498553302",
+  appId: "1:548498553302:web:3e1beb85d742d5786e8c77",
+  measurementId: "G-1H2TEGNX67"
 };
 const app = initializeApp(firebaseConfig);
 const auth = initializeAuth(app, {
