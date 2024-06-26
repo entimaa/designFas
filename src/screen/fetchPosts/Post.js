@@ -97,6 +97,7 @@ const Post = () => {
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 comments: [],
+                category:category
               });
 
               // Reset state after successful upload and post creation

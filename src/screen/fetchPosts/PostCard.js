@@ -37,6 +37,7 @@ const PostCard = ({ post }) => {
           <View style={styles.userText}>
             <TouchableOpacity onPress={navigateToUserProfile}>
               <Text style={styles.userName}>{post.username}</Text>
+              <Text style={styles.userName}>{post.category}</Text>
             </TouchableOpacity>
             <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
           </View>

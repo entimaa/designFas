@@ -9,15 +9,14 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { Button } from 'react-native-elements';
 
 const AddPostComponent = ({ toggleModal }) => {
-  const { user, userName, userType ,userImgUrl} = useAuth();
+  const { user, userName, userType, userImgUrl } = useAuth();
   const [profileImage, setProfileImage] = useState(null);
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-
-  
+  const [category, setCategory] = useState('');
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -46,6 +45,11 @@ const AddPostComponent = ({ toggleModal }) => {
   const uploadImage = async () => {
     if (!image) {
       Alert.alert("No Image Selected", "Please select an image first.");
+      return;
+    }
+    
+    if (!category) {
+      Alert.alert("Category Missing", "Please select a category.");
       return;
     }
 
@@ -93,13 +97,15 @@ const AddPostComponent = ({ toggleModal }) => {
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 comments: [],
-                userImgUrl:userImgUrl
+                userImgUrl: userImgUrl,
+                category: category
               });
 
               // Reset state after successful upload and post creation
               setImage(null);
               setTitle('');
               setContent('');
+              setCategory('');
               if (toggleModal) {
                 toggleModal(); // Close the modal after upload
               }
@@ -144,6 +150,12 @@ const AddPostComponent = ({ toggleModal }) => {
                 placeholder="Content"
                 value={content}
                 onChangeText={setContent}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Category"
+                value={category}
+                onChangeText={setCategory}
               />
               {uploading ? (
                 <ActivityIndicator size="large" color="#00ff00" style={styles.activityIndicator} />
