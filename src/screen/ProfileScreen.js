@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, Button, StyleSheet } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+import { useAuth } from '../context/AuthContext'; // Assuming you have an AuthContext for user details
 import { db } from '../../data/DataFirebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import PostCard from './fetchPosts/PostCard';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const ProfileScreen = ({ navigation, route }) => {
-  const { user, signOutUser, userName, userType, userImgUrl } = useAuth();
+const ProfileScreen = ({ route }) => {
+  const navigation = useNavigation(); // Hook for navigation
+  const { user, signOutUser, userName, userType, userImgUrl } = useAuth(); // Assuming useAuth provides user details
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profileImageUrl, setProfileImageUrl] = useState(route.params?.userImgUrl || userImgUrl);
@@ -69,7 +71,9 @@ const ProfileScreen = ({ navigation, route }) => {
   };
 
   const handleSendMessage = () => {
-    alert('Send Message');
+    if (route.params) {
+      navigation.navigate("Chat", { userId: route.params.username });
+    }
   };
 
   const handleFollow = () => {
@@ -88,7 +92,7 @@ const ProfileScreen = ({ navigation, route }) => {
           style={styles.userImg}
           source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
         />
-        <Text style={styles.userName}>{userName}</Text>
+        <Text style={styles.userName}>{profileUserName}</Text>
         <View style={styles.userBtnWrapper}>
           {route.params ? (
             <>

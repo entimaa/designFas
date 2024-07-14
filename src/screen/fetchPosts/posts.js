@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { View, ActivityIndicator, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { collection, getDocs, query, where, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import PostCard from '../fetchPosts/PostCard'; // Correct the import path
-import { useAuth } from '../../context/AuthContext';
-import Icon from 'react-native-vector-icons/FontAwesome'; // استخدام مكتبة FontAwesome للأيقونات
+import { useAuth } from '../../context/AuthContext'; // Import your authentication context
+import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome for icons
 
 const PostsSection = ({ navigation }) => {
-  const { user } = useAuth(); // تعديل الاستخدام من useContext
+  const { user } = useAuth(); // Get the authenticated user from context
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
-  // استرجاع المنشورات بناءً على الفئة واسم المستخدم
+  // Fetch posts based on category and username
   const fetchPosts = async (categoryFilter, usernameFilter) => {
     if (!user || !user.uid) {
       setLoading(false);
@@ -34,7 +34,7 @@ const PostsSection = ({ navigation }) => {
         const postData = docSnap.data();
         let userImgUrl = null;
 
-        // استرجاع بيانات المستخدم من مجموعة userDesigner أو userClient
+        // Fetch user data from userDesigner or userClient collection
         let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
 
         if (!userDoc.exists()) {
@@ -45,8 +45,11 @@ const PostsSection = ({ navigation }) => {
           userImgUrl = userDoc.data().userImgUrl || userDoc.data().profileImageUrl;
         }
 
-        // إضافة البيانات إلى قائمة المنشورات
-        postsData.push({ id: docSnap.id, ...postData, userImgUrl });
+        // Exclude current user's posts
+        if (postData.userId !== user.uid) {
+          // Add data to posts list
+          postsData.push({ id: docSnap.id, ...postData, userImgUrl });
+        }
       }
 
       setPosts(postsData);
@@ -57,12 +60,12 @@ const PostsSection = ({ navigation }) => {
     }
   };
 
-  // تحميل المنشورات عند التغيير في user أو category أو username
+  // Load posts when user or category/username changes
   useEffect(() => {
     fetchPosts();
   }, [user]);
 
-  // التعامل مع البحث عن طريق الفئة واسم المستخدم
+  // Handle search by category or username
   const handleSearch = (text) => {
     setSearchTerm(text);
     if (text === '') {
@@ -77,6 +80,32 @@ const PostsSection = ({ navigation }) => {
     }
   };
 
+  // Handle post deletion
+  const handleDeletePost = async (postId) => {
+    try {
+      const postRef = doc(db, 'postsDesigner', postId);
+      await deleteDoc(postRef);
+      Alert.alert('Success', 'Post deleted successfully!');
+      // Refetch posts after deletion
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      Alert.alert('Error', 'Failed to delete post.');
+    }
+  };
+
+  // Confirm post deletion
+  const confirmDelete = (postId) => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => handleDeletePost(postId) }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
@@ -85,27 +114,31 @@ const PostsSection = ({ navigation }) => {
           placeholder="Search by category or username"
           placeholderTextColor="#888"
           value={searchTerm}
-          onChangeText={handleSearch} // تغيير الدالة المستخدمة للبحث
+          onChangeText={handleSearch}
         />
         <TouchableOpacity style={styles.searchButton} onPress={() => handleSearch(searchTerm)}>
           <Icon name="search" size={20} color="blue" />
         </TouchableOpacity>
       </View>
       <View style={styles.postsContainer}>
-        <ScrollView>
-          {loading ? (
-            <ActivityIndicator size="large" color="#f000ff" />
-          ) : (
-            // استخدام searchResults إذا كان هناك بحث، وإلا استخدام posts
-            (searchResults.length > 0 ? searchResults : posts).map((item) => (
-              <PostCard
-                key={item.id}
-                post={item}
-                onPress={() => navigation.navigate('ProfileScreen', { userId: item.userId })}
-              />
-            ))
-          )}
-        </ScrollView>
+        {loading ? (
+          <ActivityIndicator size="large" color="#f000ff" />
+        ) : (
+          <ScrollView>
+            {(searchResults.length > 0 ? searchResults : posts).map((item) => (
+              // Check if the post does not belong to the current user and render it
+              item.userId !== user.uid && (
+                <PostCard
+                  key={item.id}
+                  post={item}
+                  onDelete={() => confirmDelete(item.id)}
+                  onPress={() => navigation.navigate('ProfileScreen', { userId: item.userId })}
+                  showDelete={item.userId === user.uid} // Pass showDelete prop based on current user
+                />
+              )
+            ))}
+          </ScrollView>
+        )}
       </View>
     </View>
   );
@@ -114,8 +147,8 @@ const PostsSection = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff', // تغيير لون الخلفية
-    paddingVertical: 10, // إضافة حشو أعلى وأسفل
+    backgroundColor: '#ffffff',
+    paddingVertical: 10,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -138,7 +171,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   searchButton: {
-    color:'#0C797D',
     borderRadius: 25,
     padding: 10,
     marginLeft: 10,
@@ -147,7 +179,7 @@ const styles = StyleSheet.create({
   },
   postsContainer: {
     flex: 1,
-    marginTop: 10, // إضافة هامش أعلى
+    marginTop: 10,
     paddingHorizontal: 16,
   },
 });

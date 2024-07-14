@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
+import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 
 const PostCard = ({ post }) => {
   const [heartColor, setHeartColor] = useState('#000');
   const [commentColor, setCommentColor] = useState('#000');
   const navigation = useNavigation();
+  const { user } = useAuth(); // Get the authenticated user from context
 
   const toggleHeartColor = () => {
     setHeartColor((prevColor) => (prevColor === '#000' ? 'red' : '#000'));
@@ -22,6 +26,28 @@ const PostCard = ({ post }) => {
       username: post.username, 
       userImgUrl: post.userImgUrl 
     });
+  };
+
+  const handleDeletePost = async () => {
+    try {
+      const postRef = doc(db, 'postsDesigner', post.id);
+      await deleteDoc(postRef);
+      Alert.alert('Success', 'Post deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      Alert.alert('Error', 'Failed to delete post.');
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: handleDeletePost }
+      ]
+    );
   };
 
   return (
@@ -56,6 +82,11 @@ const PostCard = ({ post }) => {
             <Icon name="comment" size={20} color={commentColor} />
             <Text style={styles.iconText}> 5 comments</Text>
           </TouchableOpacity>
+          {user && user.uid === post.userId && (
+            <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
+              <Icon name="trash" size={20} color="red" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>

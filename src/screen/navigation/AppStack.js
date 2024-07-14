@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
@@ -7,9 +7,11 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from "../../context/AuthContext";
 import ProfileScreen from "../ProfileScreen";
 import EditProfile from "../EditProfile";
-import Massage from "../Massege";
+import Message from "../Massege";
 import Post from "../fetchPosts/Post";
 import AddPost from "../fetchPosts/AddPost";
+import ChatList from '../chat/ChatList';
+import Chat from '../chat/Chat';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -40,14 +42,10 @@ const ProfileStack = () => (
 
 const MessageStack = () => (
   <Stack.Navigator>
-    <Stack.Screen name="Message" component={Massage} />
-  </Stack.Navigator>
-);
-
-const MainStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
-    <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="ChatList" component={ChatList} options={{ title: 'Chat List' }} />
+    <Stack.Screen name="Chat" component={Chat} options={({ route }) => ({
+      title: route.params.username,
+    })} />
   </Stack.Navigator>
 );
 
@@ -55,70 +53,114 @@ const HomeTabs = () => {
   const navigation = useNavigation();
   const { user, userType } = useAuth();
 
+  const getTabBarStyle = (route) => {
+    const routeName = route.state ? route.state.routes[route.state.index].name : '';
+
+    if (routeName === 'Chat') {
+      return { display: 'none' };
+    }
+    return {};
+  };
+
   const navigateToAddPost = () => {
     navigation.navigate('AddPost');
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabNavigatorContainer}>
-        <Tab.Navigator>
-          <Tab.Screen
-            name="Profile"
-            component={ProfileStack}
-            options={{
-              tabBarLabel: "Profile",
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="user" size={size} color={color} />
-              ),
-            }}
-            initialParams={{ userId: user.uid, username: user.displayName }}
-          />
-          <Tab.Screen
-            name="Post"
-            component={Post}
-            options={{
-              headerRight: userType === "Designer" ? () => (
-                <TouchableOpacity
-                  style={styles.headerButton}
-                  onPress={navigateToAddPost}
-                >
-                  <Image
-                    source={require("../../pic/iconsPost/plus (1).png")}
-                    style={[styles.headerButtonIcon, { tintColor: "#007bff" }]}
-                  />
-                </TouchableOpacity>
-              ) : null,
-              tabBarLabel: "Post",
-              tabBarIcon: ({ color, size }) => (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ color, size }) => {
+          let iconName;
+
+          if (route.name === 'Profile') {
+            iconName = 'user';
+          } else if (route.name === 'Post') {
+            iconName = 'plus';
+          } else if (route.name === 'Message') {
+            iconName = 'envelope';
+          }
+
+          return <Icon name={iconName} size={size} color={color} />;
+        },
+        tabBarStyle: getTabBarStyle(route),
+      })}
+    >
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        options={{
+          tabBarLabel: "Profile",
+        }}
+        initialParams={{ userId: user.uid, username: user.displayName }}
+      />
+      <Tab.Screen
+        name="Post"
+        component={Post}
+        options={{
+          headerRight: () => (
+            userType === "Designer" ? (
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={navigateToAddPost}
+              >
                 <Image
                   source={require("../../pic/iconsPost/plus (1).png")}
-                  style={[styles.tabIcon, { tintColor: color }]}
+                  style={[styles.headerButtonIcon, { tintColor: "#007bff" }]}
                 />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Message"
-            component={MessageStack}
-            options={{
-              tabBarLabel: "Message",
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="envelope" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="AddPost"
-            component={AddPost}
-            options={{
-              tabBarButton: () => null,
-              tabBarVisible: false,
-            }}
-          />
-        </Tab.Navigator>
-      </View>
-    </View>
+              </TouchableOpacity>
+            ) : null
+          ),
+          tabBarLabel: "Post",
+        }}
+      />
+      <Tab.Screen
+        name="Message"
+        component={MessageStack}
+        options={{
+          tabBarLabel: "Message",
+        }}
+      />
+      <Tab.Screen
+        name="AddPost"
+        component={AddPost}
+        options={{
+          tabBarButton: () => null,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+const MainStack = () => {
+  const navigation = useNavigation();
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="ChatList" 
+        component={ChatList} 
+        options={{
+          title: 'Chat List',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        }} 
+      />
+      <Stack.Screen 
+        name="Chat" 
+        component={Chat} 
+        options={({ route }) => ({
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.navigate('ChatList')} style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })} 
+      />
+    </Stack.Navigator>
   );
 };
 

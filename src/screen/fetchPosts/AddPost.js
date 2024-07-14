@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text, TouchableOpacity, FlatList } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import * as ImagePicker from "expo-image-picker";
 import { storage, db } from "../../../data/DataFirebase.js";
 import { useAuth } from '../../context/AuthContext.js';
-import { doc, setDoc, collection, getDoc } from 'firebase/firestore';
+import { doc, setDoc, collection } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Button } from 'react-native-elements';
 
@@ -17,6 +17,9 @@ const AddPostComponent = ({ toggleModal }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
+  const [showOptions, setShowOptions] = useState(false);
+
+  const categories = ["Tshirt", "Jeans", "Dress", "Jacket", "Skirt", "Pants", "Shorts", "Blouse","Shirt","Suit","Coat","Hat","Scarf","Gloves","Underwear","Pajamas","Hoodie",];
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -129,6 +132,15 @@ const AddPostComponent = ({ toggleModal }) => {
     setImage(null);
   };
 
+  const toggleOptions = () => {
+    setShowOptions(!showOptions);
+  };
+
+  const selectCategory = (selectedCategory) => {
+    setCategory(selectedCategory);
+    setShowOptions(false);
+  };
+
   return (
     <View style={styles.container}>
       {userType !== "Designer" ? (
@@ -151,12 +163,23 @@ const AddPostComponent = ({ toggleModal }) => {
                 value={content}
                 onChangeText={setContent}
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Category"
-                value={category}
-                onChangeText={setCategory}
-              />
+              <TouchableOpacity onPress={toggleOptions} style={styles.categoryInput} activeOpacity={0.8}>
+                <Text style={styles.categoryText}>Category: {category}</Text>
+                <Icon name="caret-down" size={20} color="gray" />
+              </TouchableOpacity>
+              {showOptions && (
+                <View style={styles.optionsContainer}>
+                  <FlatList
+                    data={categories}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity onPress={() => selectCategory(item)} style={styles.option}>
+                        <Text style={styles.optionText}>{item}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
               {uploading ? (
                 <ActivityIndicator size="large" color="#00ff00" style={styles.activityIndicator} />
               ) : (
@@ -207,11 +230,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  categoryInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 5,
+    backgroundColor: '#f8f8f8',
+  },
+  categoryText: {
+    fontSize: 16,
+    color: '#333',
   },
   image: {
     width: '100%',
     height: 200,
     marginBottom: 10,
+    borderRadius: 10,
   },
   uploadButton: {
     backgroundColor: '#28a745',
@@ -250,11 +291,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#0C797D',
     borderRadius: 5,
     padding: 10,
+    flexDirection: 'row',
   },
   buttonText: {
     color: '#fff',
-    marginTop: 5,
+    marginLeft: 5,
   },
+  optionsContainer: {
+    maxHeight: 120,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    backgroundColor: '#fff',
+    zIndex: 1000,
+    borderRadius: 5,
+  },
+ 
+  option: {
+    paddingVertical: 9,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: '#f9f9f9',
+  },
+  optionText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+
 });
 
 export default AddPostComponent;

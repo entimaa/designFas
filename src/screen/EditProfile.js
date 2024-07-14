@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert, ScrollView, KeyboardAvoidingView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { db, storage } from '../../data/DataFirebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { BlurView } from 'expo-blur';
 import ActionSheet from 'react-native-actionsheet';
@@ -11,6 +11,10 @@ import ActionSheet from 'react-native-actionsheet';
 const EditProfile = () => {
   const { user, userName, userType, userImgUrl, setUserImgUrl } = useAuth();
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [bio, setBio] = useState('');
   const [image, setImage] = useState(null);
   const actionSheetRef = useRef();
   const [uploading, setUploading] = useState(false);
@@ -99,13 +103,31 @@ const EditProfile = () => {
         const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
         const userDocRef = doc(db, collectionPath, user.uid);
 
-        const updatedData = { name };
+        const updatedData = {
+          name,
+          phone,
+          country,
+          city,
+          bio,
+        };
+
         if (imageUrl) {
           updatedData.userImgUrl = imageUrl;  // Add the image URL to the update
           setUserImgUrl(imageUrl);  // Update the image URL in the auth context
         }
 
         await setDoc(userDocRef, updatedData, { merge: true });
+
+        // Update the user name in postsDesigner collection
+        const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", user.uid));
+        const querySnapshot = await getDocs(postsQuery);
+
+        querySnapshot.forEach(async (postDoc) => {
+          const postRef = doc(db, "postsDesigner", postDoc.id);
+          await updateDoc(postRef, {
+            username: name,
+          });
+        });
 
         Alert.alert('Profile updated successfully');
       } catch (error) {
@@ -128,44 +150,74 @@ const EditProfile = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={showActionSheet}>
-        <View style={styles.imageContainer}>
-          <View style={styles.borderContainer}>
-            <Image source={image ? { uri: image } : { uri: userImgUrl || 'default_image_uri' }} style={styles.userImg} />
-            <BlurView intensity={20} style={styles.blurView}>
-              <Text style={styles.blurText}>Change Photo</Text>
-            </BlurView>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <ScrollView contentContainerStyle={styles.container}>
+        <TouchableOpacity onPress={showActionSheet}>
+          <View style={styles.imageContainer}>
+            <View style={styles.borderContainer}>
+              <Image source={image ? { uri: image } : { uri: userImgUrl || 'default_image_uri' }} style={styles.userImg} />
+              <BlurView intensity={20} style={styles.blurView}>
+                <Text style={styles.blurText}>Change Photo</Text>
+              </BlurView>
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
-      <Text style={styles.title}>Edit Profile</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Edit Profile</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={(text) => setName(text)}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          value={name}
+          onChangeText={(text) => setName(text)}
+        />
 
-      <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
-        <Text style={styles.buttonText}>Save Profile</Text>
-      </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          value={phone}
+          onChangeText={(text) => setPhone(text)}
+        />
 
-      <ActionSheet
-        ref={actionSheetRef}
-        title={'Select an option'}
-        options={['Choose from Library', 'Take a Photo', 'Cancel']}
-        cancelButtonIndex={2}
-        onPress={handleActionSheet}
-      />
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Country"
+          value={country}
+          onChangeText={(text) => setCountry(text)}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="City"
+          value={city}
+          onChangeText={(text) => setCity(text)}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Bio"
+          value={bio}
+          onChangeText={(text) => setBio(text)}
+        />
+
+        <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
+          <Text style={styles.buttonText}>Save Profile</Text>
+        </TouchableOpacity>
+
+        <ActionSheet
+          ref={actionSheetRef}
+          title={'Select an option'}
+          options={['Choose from Library', 'Take a Photo', 'Cancel']}
+          cancelButtonIndex={2}
+          onPress={handleActionSheet}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',

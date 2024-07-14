@@ -1,213 +1,198 @@
-import React, { useState, useEffect } from "react";
-import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text } from "react-native";
-import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import { FloatingAction } from "react-native-floating-action";
-import * as ImagePicker from "expo-image-picker";
-import { storage, db } from "../../../data/DataFirebase.js";
-import { useAuth } from '../../context/AuthContext.js';
-import { doc, setDoc, collection, getDoc } from 'firebase/firestore';
-import { useNavigation } from "@react-navigation/native";
-import { Button } from 'react-native-elements';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import Posts from '../fetchPosts/posts';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, ScrollView, StyleSheet, TextInput, TouchableOpacity, Modal, Text, Button } from 'react-native';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
+import PostCard from '../fetchPosts/PostCard'; // Correct the import path
+import { useAuth } from '../../context/AuthContext';
+import Icon from 'react-native-vector-icons/FontAwesome6'; // استخدام مكتبة FontAwesome للأيقونات
+import * as ImagePicker from 'expo-image-picker'; // إضافة مكتبة expo-image-picker
 
-const Post = () => {
-  const navigation = useNavigation();
-  const { user, userName, userType, userImgUrl } = useAuth();
-  const [image, setImage] = useState(null);
-  const [downloadURL, setDownloadURL] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+const PostsSection = ({ navigation }) => {
+  const { user } = useAuth(); // تعديل الاستخدام من useContext
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showImageSearch, setShowImageSearch] = useState(false); // State to toggle image search modal
 
+  // استرجاع المنشورات بناءً على الفئة واسم المستخدم
+  const fetchPosts = async (categoryFilter, usernameFilter) => {
+    if (!user || !user.uid) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+
+    let postsQuery = collection(db, "postsDesigner");
+
+    if (categoryFilter) {
+      postsQuery = query(postsQuery, where("category", "==", categoryFilter));
+    }
+
+    const unsubscribe = onSnapshot(postsQuery, (querySnapshot) => {
+      const postsData = [];
+
+      querySnapshot.forEach((docSnap) => {
+        const postData = docSnap.data();
+        let userImgUrl = null;
+
+        // Fetch user data from userDesigner or userClient collection
+        // Replace with your actual logic to fetch user data
+        // For example:
+        // const userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
+        // userImgUrl = userDoc.data().userImgUrl || userDoc.data().profileImageUrl;
+
+        // Ignore posts belonging to the current user
+        if (postData.userId !== user.uid) {
+          postsData.push({ id: docSnap.id, ...postData, userImgUrl });
+        }
+      });
+
+      setPosts(postsData);
+      setLoading(false);
+    });
+
+    // Clean up the listener when component unmounts or when user changes
+    return () => unsubscribe();
+  };
+
+  // تحميل المنشورات عند التغيير في user أو category أو username
+  useEffect(() => {
+    const unsubscribe = fetchPosts();
+    return () => unsubscribe();
+  }, [user]);
+
+  // التعامل مع البحث عن طريق الفئة واسم المستخدم
+  const handleSearch = (text) => {
+    setSearchTerm(text);
+    if (text === '') {
+      setSearchResults([]);
+    } else {
+      const filteredPosts = posts.filter(item => {
+        const categoryMatch = item.category && item.category.toLowerCase().startsWith(text.toLowerCase());
+        const usernameMatch = item.username && item.username.toLowerCase().startsWith(text.toLowerCase());
+        return categoryMatch || usernameMatch;
+      });
+
+      setSearchResults(filteredPosts);
+    }
+  };
+
+  // فتح الكاميرا أو المعرض لاختيار الصورة
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
+
     if (!result.cancelled) {
-      setImage(result.uri); // Change here for updated API
+      searchByImageUri(result.uri);
     }
   };
 
   const takeImage = async () => {
-    let result = await ImagePicker.launchCameraAsync({
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
+
     if (!result.cancelled) {
-      setImage(result.uri); // Change here for updated API
+      searchByImageUri(result.uri);
     }
   };
 
-  const uploadImage = async () => {
-    if (!image) {
-      Alert.alert("No Image Selected", "Please select an image first.");
-      return;
-    }
-
-    const uploadUri = image;
-    let filename = uploadUri.substring(uploadUri.lastIndexOf("/") + 1);
-    const ext = filename.split(".").pop();
-    const name = filename.split(".").slice(0, -1).join(".");
-    filename = name + Date.now() + "." + ext;
-
-    setUploading(true);
-
+  // البحث عن طريق URI الصورة في Firestore
+  const searchByImageUri = async (uri) => {
+    setLoading(true);
+    setShowImageSearch(false); // إغلاق النافذة المنبثقة بعد اختيار الصورة
     try {
-      const response = await fetch(image);
-      const blob = await response.blob();
+      const userDocsDesigner = await getDocs(collection(db, 'userDesigner'));
+      const userDocsClient = await getDocs(collection(db, 'userClient'));
+      const allUsersDocs = [...userDocsDesigner.docs, ...userDocsClient.docs];
+      
+      const matchingUsers = allUsersDocs.filter(docSnap => {
+        const data = docSnap.data();
+        return data.userImgUrl === uri || data.profileImageUrl === uri;
+      });
 
-      const storageRef = ref(storage, `posts/${filename}`);
+      const userIds = matchingUsers.map(docSnap => docSnap.id);
 
-      const uploadTask = uploadBytesResumable(storageRef, blob);
+      if (userIds.length > 0) {
+        const postsQuery = query(collection(db, "postsDesigner"), where("userId", "in", userIds));
+        const querySnapshot = await getDocs(postsQuery);
+        const postsData = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        setSearchResults(postsData);
+      } else {
+        setSearchResults([]);
+      }
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setProgress(progress.toFixed());
-        },
-        (error) => {
-          console.error(error);
-          setUploading(false);
-          Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          setDownloadURL(url);
-          setUploading(false);
-          Alert.alert("Upload Success", "Image uploaded successfully!");
-
-          if (user && user.uid) {
-            try {
-              const postRef = doc(collection(db, "postsDesigner"));
-              await setDoc(postRef, {
-                title: title,
-                content: content,
-                imageUrl: url,
-                userId: user.uid,
-                username: userName,
-                userImgUrl: userImgUrl, // Add user image URL to post data
-                timestamp: new Date().toISOString(),
-                likes: 0,
-                comments: [],
-                category:category
-              });
-
-              // Reset state after successful upload and post creation
-              setImage(null);
-              setTitle('');
-              setContent('');
-            } catch (error) {
-              console.error("Error adding document: ", error);
-              Alert.alert("Post Error", "Failed to create post. Please try again later.");
-            }
-          } else {
-            Alert.alert("User Error", "User is not authenticated.");
-          }
-        }
-      );
+      setLoading(false);
     } catch (error) {
-      console.error("Upload Error: ", error);
-      setUploading(false);
-      Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
+      console.error('Error searching by image URI: ', error);
+      setLoading(false);
     }
   };
 
-  const actions = [
-    {
-      text: "Pick Image",
-      icon: <Icon name="photo" size={20} color="#fff" />,
-      name: "bt_pick_image",
-      position: 2,
-    },
-    {
-      text: "Take Photo",
-      icon: <Icon name="camera" size={20} color="#fff" />,
-      name: "bt_take_photo",
-      position: 1,
-    },
-  ];
-
-  const cancelImage = () => {
-    setImage(null);
+  // تبديل حالة النافذة المنبثقة للبحث بواسطة الصورة
+  const toggleImageSearchModal = () => {
+    setShowImageSearch(!showImageSearch);
   };
+
+  // محتوى النافذة المنبثقة للبحث بواسطة الصورة
+  const ImageSearchModal = () => (
+    <Modal
+      visible={showImageSearch}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowImageSearch(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text>Select an image for search</Text>
+          <Button title="Pick Image from Gallery" onPress={pickImage} />
+          <Button title="Take a Photo" onPress={takeImage} />
+          <Button title="Close" onPress={() => setShowImageSearch(false)} />
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={styles.container}>
-      {userType !== "Designer" ? (
-        <Text style={styles.errorMessage}>Only Designers can post content.</Text>
-      ) : (
-        <>
-          {image && <Image source={{ uri: userImgUrl }} style={styles.image} />}
-          {image && (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Title"
-                value={title}
-                onChangeText={setTitle}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Content"
-                value={content}
-                onChangeText={setContent}
-              />
-              {uploading ? (
-                <ActivityIndicator size="large" color="#00ff00" style={styles.activityIndicator} />
-              ) : (
-                <>
-                  <Button
-                    title="Upload Image"
-                    onPress={uploadImage}
-                    buttonStyle={styles.uploadButton}
-                    titleStyle={styles.uploadButtonText}
-                  />
-                  <Button
-                    title="Cancel"
-                    onPress={cancelImage}
-                    buttonStyle={styles.cancelButton}
-                    titleStyle={styles.cancelButtonText}
-                  />
-                </>
-              )}
-            </>
-          )}
-          {!image && (
-            <View style={styles.floatingAction}>
-              <FloatingAction
-                actions={actions}
-                color="#0C797D"
-                position="left"
-                floatingIcon={
-                  <Icon name="plus" size={25} color="#fff" />
-                }
-                distanceToEdge={{ vertical: 110, horizontal: 20 }}
-                onPressItem={(name) => {
-                  switch (name) {
-                    case "bt_pick_image":
-                      pickImage();
-                      break;
-                    case "bt_take_photo":
-                      takeImage();
-                      break;
-                    default:
-                      break;
-                  }
-                }}
-              />
-            </View>
-          )}
-        </>
-      )}
-      <Posts />
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Search by category or username"
+          placeholderTextColor="#888"
+          value={searchTerm}
+          onChangeText={handleSearch}
+        />
+        <TouchableOpacity style={styles.imageSearchButton} onPress={toggleImageSearchModal}>
+          <Icon name="images" size={20} color="blue" />
+        </TouchableOpacity>
+      </View>
+      
+      {/* النافذة المنبثقة للبحث بواسطة الصورة */}
+      {showImageSearch && <ImageSearchModal />}
+
+      <ScrollView>
+        {loading ? (
+          <ActivityIndicator size="large" color="#f000ff" />
+        ) : (
+          // استخدام searchResults إذا كان هناك بحث، وإلا استخدام posts
+          (searchResults.length > 0 ? searchResults : posts).map((item) => (
+            <PostCard
+              key={item.id}
+              post={item}
+              onPress={() => navigation.navigate('ProfileScreen', { userId: item.userId })}
+            />
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 };
@@ -215,56 +200,49 @@ const Post = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 0.1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff', // تغيير لون الخلفية
+    paddingVertical: 10, // إضافة حشو أعلى وأسفل
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 3,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 20,
+    marginHorizontal: 18,
+    shadowColor: 'blue',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    elevation: 5,
   },
   input: {
+    flex: 1,
     height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
+    color: '#333',
   },
-  image: {
-    width: '100%',
-    height: 200,
-    marginBottom: 10,
-  },
-  uploadButton: {
-    backgroundColor: '#28a745',
-    borderRadius: 5,
-    marginVertical: 10,
-  },
-  uploadButtonText: {
-    fontSize: 18,
-    color: '#fff',
-  },
-  cancelButton: {
-    backgroundColor: '#dc3545',
-    borderRadius: 5,
-    marginVertical: 10,
-  },
-  cancelButtonText: {
-    fontSize: 18,
-    color: '#fff',
-  },
-  floatingAction: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    left: 0,
-    alignItems: 'center',
+  imageSearchButton: {
+    borderRadius: 25,
+    padding: 10,
+    marginLeft: 10,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  activityIndicator: {
-    marginTop: 10,
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  errorMessage: {
-    color: 'red',
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 20,
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    alignItems: 'center',
   },
 });
 
-export default Post;
+export default PostsSection;
