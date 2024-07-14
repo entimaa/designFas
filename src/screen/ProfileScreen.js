@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, Button, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // Import navigation hook
-import { useAuth } from '../context/AuthContext'; // Assuming you have an AuthContext for user details
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import PostCard from './fetchPosts/PostCard';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ProfileScreen = ({ route }) => {
-  const navigation = useNavigation(); // Hook for navigation
-  const { user, signOutUser, userName, userType, userImgUrl } = useAuth(); // Assuming useAuth provides user details
+  const navigation = useNavigation();
+  const { user, signOutUser, userName, userType, userImgUrl } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profileImageUrl, setProfileImageUrl] = useState(route.params?.userImgUrl || userImgUrl);
@@ -72,7 +72,7 @@ const ProfileScreen = ({ route }) => {
 
   const handleSendMessage = () => {
     if (route.params) {
-      navigation.navigate("Chat", { userId: route.params.username });
+      navigation.navigate("Chat", { userId: route.params.userId, username: profileUserName, userImgUrl: profileImageUrl });
     }
   };
 
@@ -134,7 +134,7 @@ const ProfileScreen = ({ route }) => {
           posts.length > 0 ? (
             posts.map((post) => <PostCard key={post.id} post={post} />)
           ) : profileUserType !== 'Designer' ? (
-            <Text style={styles.errorMessage}>ur not a designer , Only the designer can publish a post.. !!</Text>
+            <Text style={styles.errorMessage}>You are not a designer, only designers can publish a post!</Text>
           ) : (
             <Text style={styles.errorMessage}>No posts found.</Text>
           )
