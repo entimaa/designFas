@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase';
+import { useAuth } from '../../context/AuthContext';
 
 const ChatList = ({ navigation }) => {
   const [users, setUsers] = useState([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -16,11 +18,13 @@ const ChatList = ({ navigation }) => {
           const fetchedUsers = [];
           querySnapshot.forEach((doc) => {
             const userData = doc.data();
-            fetchedUsers.push({
-              id: doc.id,
-              username: userData.name,
-              userImgUrl: userData.userImgUrl,
-            });
+            if (doc.id !== user?.uid) { // Exclude the current user from the list
+              fetchedUsers.push({
+                id: doc.id,
+                username: userData.name,
+                userImgUrl: userData.userImgUrl,
+              });
+            }
           });
           setUsers(fetchedUsers);
         });
@@ -32,7 +36,7 @@ const ChatList = ({ navigation }) => {
     };
 
     fetchUsers();
-  }, []);
+  }, [user?.uid]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity

@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { collection, orderBy, query, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, orderBy, query, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { GiftedChat, Bubble, Send } from 'react-native-gifted-chat';
-import { auth, db } from '../../../data/DataFirebase';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { db } from '../../../data/DataFirebase';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
   const { user, userImgUrl } = useAuth();
   const navigation = useNavigation();
+  const route = useRoute();
+  const { userId } = route.params;
 
   // Hide tab bar when entering Chat screen
   useLayoutEffect(() => {
@@ -26,32 +28,42 @@ const Chat = () => {
   }, [navigation]);
 
   useLayoutEffect(() => {
-    const collRef = collection(db, 'chats');
-    const q = query(collRef, orderBy('createdAt', 'desc'));
+    if (!user?.uid || !userId) return;
+
+    const collRef = collection(db, 'chats', user.uid, 'messages');
+    const q = query(collRef, orderBy('createdAt'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const updatedMessages = snapshot.docs.map((doc) => ({
         _id: doc.id,
-        createdAt: new Date(doc.data().createdAt.seconds * 1000),
+        createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date(),
         text: doc.data().text,
         user: doc.data().user,
       }));
-      setMessages(updatedMessages);
+
+      // Reverse the messages to display the latest at the bottom
+      setMessages(updatedMessages.reverse());
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.uid, userId]);
 
   const onSend = useCallback((messages = []) => {
-    setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
-    const { _id, createdAt, text, user } = messages[0];
-    addDoc(collection(db, 'chats'), {
+    if (!user?.uid || !userId) return;
+
+    const { _id, text, user: messageUser } = messages[0];
+    const messageData = {
       _id,
-      createdAt,
+      createdAt: serverTimestamp(),
       text,
-      user,
-    });
-  }, []);
+      user: messageUser,
+    };
+
+    // Add message to the current user's subcollection
+    addDoc(collection(db, 'chats', user.uid, 'messages'), messageData);
+    // Add message to the recipient's subcollection
+    addDoc(collection(db, 'chats', userId, 'messages'), messageData);
+  }, [user?.uid, userId]);
 
   const renderBubble = (props) => (
     <Bubble
