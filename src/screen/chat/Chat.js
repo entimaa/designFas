@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { collection, orderBy, query, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { GiftedChat, Bubble, Send } from 'react-native-gifted-chat';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -12,10 +12,12 @@ const Chat = () => {
   const { user, userImgUrl } = useAuth();
   const navigation = useNavigation();
   const route = useRoute();
-  const { userId } = route.params;
+  const { userId, username } = route.params;
 
-  const chatId = user.uid < userId ? `${user.uid}_${userId}` : `${userId}_${user.uid}`;
+  // Generate a unique chat ID for the conversation
+  const chatId = user?.uid < userId ? `${user?.uid}_${userId}` : `${userId}_${user?.uid}`;
 
+  // Hide tab bar when entering Chat screen
   useLayoutEffect(() => {
     navigation.getParent()?.setOptions({
       tabBarStyle: { display: 'none' },
@@ -28,6 +30,19 @@ const Chat = () => {
     };
   }, [navigation]);
 
+  // Set the header title to the username and handle the back action
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: username,
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <FontAwesome name="chevron-left" size={25} color="#000" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, username]);
+
+  // Fetch messages from Firestore
   useLayoutEffect(() => {
     const collRef = collection(db, 'chats', chatId, 'messages');
     const q = query(collRef, orderBy('createdAt', 'desc'));
@@ -44,33 +59,31 @@ const Chat = () => {
     });
 
     return () => unsubscribe();
-  }, [user?.uid, userId]);
+  }, [user?.uid, userId, chatId]);
 
   const onSend = useCallback((messages = []) => {
-    if (!user?.uid || !userId) return;
-
-    setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
-
-    const { _id, text } = messages[0];
+    const { _id, text, user: messageUser } = messages[0];
     const messageData = {
       _id,
       createdAt: serverTimestamp(),
       text,
-      user: {
-        _id: user.uid,
-        name: user.displayName,
-        avatar: userImgUrl,
-      },
+      user: messageUser,
     };
 
     addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
-  }, [user?.uid, userId]);
+  }, [user?.uid, userId, chatId]);
 
   const renderBubble = (props) => (
     <Bubble
       {...props}
-      wrapperStyle={{ right: { backgroundColor: '#2e64e5' }, left: { backgroundColor: '#B3B3B3' } }}
-      textStyle={{ right: { color: 'white' }, left: { color: 'white' } }}
+      wrapperStyle={{
+        left: { backgroundColor: '#B3B3B3' },
+        right: { backgroundColor: '#2e64e5' },
+      }}
+      textStyle={{
+        left: { color: 'white' },
+        right: { color: 'white' },
+      }}
     />
   );
 

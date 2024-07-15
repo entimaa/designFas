@@ -56,9 +56,9 @@ const ProfileScreen = ({ route }) => {
           postsData.push({ id: docSnap.id, ...postData, userImgUrl });
         }
         setPosts(postsData);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching posts: ', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -71,9 +71,10 @@ const ProfileScreen = ({ route }) => {
   };
 
   const handleSendMessage = () => {
-    if (route.params) {
-      navigation.navigate("Chat", { userId: route.params.userId, username: profileUserName, userImgUrl: profileImageUrl });
+    if(route.params){
+      navigation.navigate("Chat",{userId: route.params.userId , username: profileUserName, userImgUrl: profileImageUrl})
     }
+    
   };
 
   const handleFollow = () => {
