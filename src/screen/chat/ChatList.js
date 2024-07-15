@@ -11,14 +11,17 @@ const ChatList = ({ navigation }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const usersRef = collection(db, 'userDesigner');
-        const q = query(usersRef);
+        const designerRef = collection(db, 'userDesigner');
+        const clientRef = collection(db, 'userClient');
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const designerQuery = query(designerRef);
+        const clientQuery = query(clientRef);
+
+        const unsubscribeDesigner = onSnapshot(designerQuery, (querySnapshot) => {
           const fetchedUsers = [];
           querySnapshot.forEach((doc) => {
             const userData = doc.data();
-            if (doc.id !== user?.uid) { // Exclude the current user from the list
+            if (doc.id !== user?.uid) {
               fetchedUsers.push({
                 id: doc.id,
                 username: userData.name,
@@ -26,10 +29,28 @@ const ChatList = ({ navigation }) => {
               });
             }
           });
-          setUsers(fetchedUsers);
+          setUsers(prevUsers => [...prevUsers, ...fetchedUsers]);
         });
 
-        return () => unsubscribe();
+        const unsubscribeClient = onSnapshot(clientQuery, (querySnapshot) => {
+          const fetchedUsers = [];
+          querySnapshot.forEach((doc) => {
+            const userData = doc.data();
+            if (doc.id !== user?.uid) {
+              fetchedUsers.push({
+                id: doc.id,
+                username: userData.name,
+                userImgUrl: userData.userImgUrl,
+              });
+            }
+          });
+          setUsers(prevUsers => [...prevUsers, ...fetchedUsers]);
+        });
+
+        return () => {
+          unsubscribeDesigner();
+          unsubscribeClient();
+        };
       } catch (error) {
         console.error('Error fetching users: ', error);
       }
