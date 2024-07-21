@@ -6,6 +6,8 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import AuthStack from "./src/screen/navigation/AuthStack";
 import Home from "./src/screen/navigation/AppStack";
+import LoginScreen from "./src/screen/LoginScreen";
+
 
 const Stack = createStackNavigator();
 
@@ -32,7 +34,7 @@ const AppNavigation = () => {
         />
       ) : (
         <Stack.Screen
-          name="Auth"
+          name="auth"
           component={AuthStack}
           options={{ headerShown: false }}
         />

@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 
 const PostCard = ({ post }) => {
   const [heartColor, setHeartColor] = useState('#000');
   const [commentColor, setCommentColor] = useState('#000');
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState(post.comments || []); // Added state for comments
   const navigation = useNavigation();
-  const { user } = useAuth(); // Get the authenticated user from context
+  const { user, userName, userImgUrl } = useAuth(); // Get the authenticated user from context
+
+  useEffect(() => {
+    const postRef = doc(db, 'postsDesigner', post.id);
+    const unsubscribe = onSnapshot(postRef, (doc) => {
+      setComments(doc.data().comments || []);
+    });
+
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+  }, [post.id]);
 
   const toggleHeartColor = () => {
     setHeartColor((prevColor) => (prevColor === '#000' ? 'red' : '#000'));
@@ -18,6 +31,7 @@ const PostCard = ({ post }) => {
 
   const toggleCommentColor = () => {
     setCommentColor((prevColor) => (prevColor === '#000' ? 'blue' : '#000'));
+    setShowComments((prevShow) => !prevShow); // Toggle comment visibility
   };
 
   const navigateToUserProfile = () => {
@@ -46,6 +60,60 @@ const PostCard = ({ post }) => {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: handleDeletePost }
+      ]
+    );
+  };
+
+  const handleAddComment = async () => {
+    if (newComment.trim().length === 0) {
+      Alert.alert('Error', 'Comment cannot be empty.');
+      return;
+    }
+
+    const commentData = {
+      id: new Date().toISOString(), // Unique ID for each comment
+      userId: user.uid,
+      username: userName || 'USER',
+      userImgUrl: userImgUrl || '../../pic/avtar.png',
+      comment: newComment,
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const postRef = doc(db, 'postsDesigner', post.id);
+      await updateDoc(postRef, {
+        comments: arrayUnion(commentData),
+      });
+
+      setNewComment('');
+      setShowComments(true); // Show comments section after adding a new comment
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      Alert.alert('Error', 'Failed to add comment.');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const postRef = doc(db, 'postsDesigner', post.id);
+      const updatedComments = comments.filter(comment => comment.id !== commentId);
+      await updateDoc(postRef, {
+        comments: updatedComments,
+      });
+      Alert.alert('Success', 'Comment deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      Alert.alert('Error', 'Failed to delete comment.');
+    }
+  };
+
+  const confirmDeleteComment = (commentId) => {
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteComment(commentId) },
       ]
     );
   };
@@ -80,7 +148,7 @@ const PostCard = ({ post }) => {
           </TouchableOpacity>
           <TouchableOpacity onPress={toggleCommentColor} style={styles.iconButton}>
             <Icon name="comment" size={20} color={commentColor} />
-            <Text style={styles.iconText}> 5 comments</Text>
+            <Text style={styles.iconText}> {comments.length} comments</Text>
           </TouchableOpacity>
           {user && user.uid === post.userId && (
             <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
@@ -88,6 +156,44 @@ const PostCard = ({ post }) => {
             </TouchableOpacity>
           )}
         </View>
+
+        {showComments && (
+          <View style={styles.commentsSection}>
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onLongPress={() => confirmDeleteComment(item.id)} // Add onLongPress event
+                  style={styles.commentContainer}
+                >
+                  <Image
+                    source={{ uri: item.userImgUrl || 'https://via.placeholder.com/100' }}
+                    style={styles.userImg}
+                  />
+                  <View style={styles.commentContent}>
+                    <Text style={styles.commentUsername}>{item.username}</Text>
+                    <Text style={styles.commentTimestamp}>
+                      {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString()}
+                    </Text>
+                    <Text style={styles.commentText}>{item.comment}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a comment..."
+                value={newComment}
+                onChangeText={setNewComment}
+              />
+              <TouchableOpacity onPress={handleAddComment} style={styles.sendButton}>
+                <Icon name="paper-plane" size={24} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -165,6 +271,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  commentsSection: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+  },
+  commentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  commentContent: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  commentUsername: {
+    fontWeight: 'bold',
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  commentTimestamp: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 20,
+    padding: 10,
+    fontSize: 14,
+    marginRight: 10,
+  },
+  sendButton: {
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: '#e1e1e1',
+  },
 });
 
 export default PostCard;
+

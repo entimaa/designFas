@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app, db, storage } from '../../data/DataFirebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const AuthContext = createContext();
@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [userImgUrl, setUserImgUrl] = useState(null);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [posts, setPosts] = useState([]); // حالة لتخزين المنشورات
   const auth = getAuth(app);
 
   useEffect(() => {
@@ -38,6 +39,10 @@ export const AuthProvider = ({ children }) => {
             setUserImgUrl(userData.userImgUrl || null);
             setFollowersCount(userData.followersCount || 0);
             setFollowingCount(userData.followingCount || 0);
+
+            // تحميل المنشورات عند تسجيل الدخول
+            await fetchPosts();
+
           } else {
             console.log("No such document!");
           }
@@ -56,11 +61,36 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, [auth]);
 
+  const fetchPosts = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'postsDesigner'));
+      const postsData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          content: data.content,
+          imageUrl: data.imageUrl,
+          userId: data.userId,
+          username: data.username,
+          timestamp: data.timestamp,
+          likes: data.likes,
+          comments: data.comments,
+          userImgUrl: data.userImgUrl,
+          category: data.category,
+        };
+      });
+      setPosts(postsData);
+    } catch (error) {
+      console.error('Error fetching posts: ', error);
+    }
+  };
+
   const signUp = async (email, password, name, type, image) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
-  
+
       const collectionPath = type === 'Designer' ? 'userDesigner' : 'userClient';
       const userData = {
         email,
@@ -71,13 +101,13 @@ export const AuthProvider = ({ children }) => {
         followersCount: 0,
         followingCount: 0,
       };
-  
+
       await setDoc(doc(db, collectionPath, userId), userData);
-  
+
       if (image) {
         await uploadUserProfileImage(userId, image);
       }
-  
+
       setUserName(name);
       setUserType(type);
     } catch (error) {
@@ -96,6 +126,7 @@ export const AuthProvider = ({ children }) => {
     setUserImgUrl(null);
     setFollowersCount(0);
     setFollowingCount(0);
+    setPosts([]); // تفريغ المنشورات عند تسجيل الخروج
   };
 
   const uploadUserProfileImage = async (userId, image) => {
@@ -115,7 +146,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userName, userType, userImgUrl, followersCount, followingCount, setUserImgUrl, signUp, signIn, signOutUser }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userName, 
+      userType, 
+      userImgUrl, 
+      followersCount, 
+      followingCount, 
+      posts, // إضافة المنشورات إلى القيمة المقدمة
+      setPosts, // إضافة دالة لتحديث المنشورات إذا لزم الأمر
+      setUserImgUrl, 
+      signUp, 
+      signIn, 
+      signOutUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );

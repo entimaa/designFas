@@ -160,13 +160,12 @@ const ProfileScreen = ({ route }) => {
           <Icon name="chevron-left" size={25} color="#000" />
         </TouchableOpacity>
       )}
-      
       <View style={styles.topContainer}>
         <Image
           style={styles.userImg}
           source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
         />
-        <Text style={styles.userName}>{userName}</Text>
+        <Text style={styles.userName}>{profileUserName}</Text>
         {profileUserType && <Text style={styles.userType}>{profileUserType}</Text>}
         {!isCurrentUser && (
           <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
@@ -178,18 +177,11 @@ const ProfileScreen = ({ route }) => {
             <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
           </TouchableOpacity>
         )}
-       {isCurrentUser && (
-  <View style={styles.userActionsContainer}>
-    <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
-      <Icon name="edit" size={25} color="#000" />
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-      <Text style={styles.logoutButtonText}>Logout</Text>
-    </TouchableOpacity>
-  </View>
-)}
-
-       
+        {isCurrentUser && (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <View style={styles.statsContainer}>
         <TouchableOpacity onPress={toggleFollowersModal}>
@@ -210,7 +202,7 @@ const ProfileScreen = ({ route }) => {
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.postsContainer}>
-      {loading ? (
+        {loading ? (
           <ActivityIndicator size="large" color="#000" />
         ) : (
           posts.map((post) => <PostCard key={post.id} post={post} />)
@@ -237,12 +229,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 10,
-  },
-  editButton: {
-    marginHorizontal: 7,
-    paddingVertical: 5,
-    paddingHorizontal: 20,
-    borderRadius: 30,
   },
   topContainer: {
     alignItems: 'center',
@@ -281,11 +267,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutButton: {
-    marginHorizontal: 7,
+    marginTop: 10,
     backgroundColor: '#d9534f',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 30,
+    borderRadius: 5,
   },
   logoutButtonText: {
     color: '#fff',
@@ -310,14 +296,6 @@ const styles = StyleSheet.create({
   postsContainer: {
     paddingHorizontal: 10,
   },
-  userActionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  
 });
 
 export default ProfileScreen;
-
-         

@@ -12,33 +12,63 @@ import Post from "../fetchPosts/Post";
 import AddPost from "../fetchPosts/AddPost";
 import ChatList from '../chat/ChatList';
 import Chat from '../chat/Chat';
+import CommentsScreen from "../fetchPosts/CommentScreen"; // إضافة CommentsScreen
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const ProfileStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen 
-      name="ProfileScreen" 
-      component={ProfileScreen} 
-      options={{
-        title: ' ',
-        headerTitleAlign: 'center',
-        headerStyle: {
-          shadowColor: '#fff',
-          elevation: 0,
-        },
-        headerShadowVisible: false,
-        headerBackImage: () => (
-          <View style={{ marginLeft: 15 }}>
-            <Icon name="chevron-left" size={25} color="#fff" />
-          </View>
-        ),
-      }} 
-    />
-    <Stack.Screen name="EditProfile" component={EditProfile} />
-  </Stack.Navigator>
-);
+const handleLogout = async () => {
+  await signOutUser();
+};
+
+const ProfileStack = () => {
+  const { user } = useAuth();
+  const navigation = useNavigation();
+
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="ProfileScreen"
+        component={ProfileScreen}
+        options={{
+          title: ' ',
+          headerTitleAlign: 'center',
+          headerStyle: {
+            shadowColor: '#fff',
+            elevation: 0,
+          },
+          headerShadowVisible: false,
+          headerBackImage: () => (
+            <View style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#fff" />
+            </View>
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                style={{ marginRight: 15 }}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <Icon name="edit" size={25} color="#000" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ marginRight: 15 }}
+                onPress={async () => {
+                  await signOutUser();
+                  navigation.navigate('Login'); // Assuming 'Login' is your login screen name
+                }}
+              >
+                <Icon name="sign-out" size={25} color="#000" />
+              </TouchableOpacity>
+            </View>
+          ),
+        }}
+        initialParams={{ userId: user.uid, username: user.displayName }}
+      />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
+    </Stack.Navigator>
+  );
+};
 
 const MessageStack = () => (
   <Stack.Navigator>
@@ -91,7 +121,6 @@ const HomeTabs = () => {
         options={{
           tabBarLabel: "Profile",
         }}
-        initialParams={{ userId: user.uid, username: user.displayName }}
       />
       <Tab.Screen
         name="Post"
@@ -101,8 +130,7 @@ const HomeTabs = () => {
             userType === "Designer" ? (
               <TouchableOpacity
                 style={styles.headerButton}
-                onPress={navigateToAddPost}
-              >
+                onPress={navigateToAddPost} >
                 <Image
                   source={require("../../pic/iconsPost/plus (1).png")}
                   style={[styles.headerButtonIcon, { tintColor: "#007bff" }]}
@@ -159,6 +187,18 @@ const MainStack = () => {
             </TouchableOpacity>
           ),
         })} 
+      />
+      <Stack.Screen 
+        name="Comments" 
+        component={CommentsScreen} // إضافة شاشة التعليقات
+        options={{
+          title: 'Comments',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        }} 
       />
     </Stack.Navigator>
   );
