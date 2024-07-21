@@ -107,15 +107,17 @@ const PostCard = ({ post }) => {
     }
   };
 
-  const confirmDeleteComment = (commentId) => {
-    Alert.alert(
-      'Delete Comment',
-      'Are you sure you want to delete this comment?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteComment(commentId) },
-      ]
-    );
+  const confirmDeleteComment = (commentId, commentUserId) => {
+    if (user.uid === commentUserId) {
+      Alert.alert(
+        'Delete Comment',
+        'Are you sure you want to delete this comment?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => handleDeleteComment(commentId) },
+        ]
+      );
+    } else null
   };
 
   return (
@@ -164,11 +166,11 @@ const PostCard = ({ post }) => {
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  onLongPress={() => confirmDeleteComment(item.id)} // Add onLongPress event
+                  onLongPress={() => confirmDeleteComment(item.id, item.userId)} // Pass commentId and commentUserId
                   style={styles.commentContainer}
                 >
                   <Image
-                    source={{ uri: item.userImgUrl || 'https://via.placeholder.com/100' }}
+                    source={{ uri: item.userImgUrl || '../../pic/avtar.png' }}
                     style={styles.userImg}
                   />
                   <View style={styles.commentContent}>
@@ -189,7 +191,7 @@ const PostCard = ({ post }) => {
                 onChangeText={setNewComment}
               />
               <TouchableOpacity onPress={handleAddComment} style={styles.sendButton}>
-                <Icon name="paper-plane" size={24} color="#2196F3" />
+                <Icon name="paper-plane" size={20} color="#2196F3" />
               </TouchableOpacity>
             </View>
           </View>
@@ -315,9 +317,7 @@ const styles = StyleSheet.create({
   sendButton: {
     padding: 10,
     borderRadius: 20,
-    backgroundColor: '#e1e1e1',
   },
 });
 
 export default PostCard;
-
