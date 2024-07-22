@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
-import Icon from 'react-native-vector-icons/FontAwesome'; // أو أي مكتبة تستخدمها
 
 const PostCard = ({ post }) => {
   const [heartColor, setHeartColor] = useState('#000');
@@ -14,8 +14,8 @@ const PostCard = ({ post }) => {
   const [comments, setComments] = useState(post.comments || []);
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
   const [likedByUser, setLikedByUser] = useState(false);
-  const [reportCount, setReportCount] = useState(post.reportCount || 0);
-  const [reportedByUser, setReportedByUser] = useState(false);
+  const [reportCount, setReportCount] = useState(post.reportCount || 0); // Added state for report count
+  const [reportedByUser, setReportedByUser] = useState(false); // State to check if the user reported the post
   const navigation = useNavigation();
   const { user, userName, userImgUrl } = useAuth();
 
@@ -188,16 +188,14 @@ const PostCard = ({ post }) => {
   };
 
   const confirmReport = () => {
-    if (user.uid !== post.userId) { // Only show report button if the user is not the post owner
-      Alert.alert(
-        'Report Post',
-        'Are you sure you want to report this post?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Report', style: 'destructive', onPress: handleReportPost }
-        ]
-      );
-    }
+    Alert.alert(
+      'Report Post',
+      'Are you sure you want to report this post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Report', style: 'destructive', onPress: handleReportPost }
+      ]
+    );
   };
 
   return (
@@ -232,75 +230,74 @@ const PostCard = ({ post }) => {
             <Icon name="comment" size={20} color={commentColor} />
             <Text style={styles.iconText}>{comments.length} comments</Text>
           </TouchableOpacity>
-          {user.uid !== post.userId && (
-            <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
-              <Image                 source={require('../../pic/iconsPost/REPORT.png')} // تأكد من أن المسار صحيح للصورة
-                style={styles.reportIcon}
-              />
-              <Text style={styles.iconText}>Report</Text>
-              </TouchableOpacity>
-          )}
-          {user.uid === post.userId && (
+          <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
+            <Icon name="flag" size={20} color="orange" />
+            <Text style={styles.iconText}>Report</Text>
+          </TouchableOpacity>
+          {user && user.uid === post.userId && (
             <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
-               <Icon name="trash" size={20} color="red" /> 
-              <Text style={styles.iconText}>Delete</Text>
+              <Icon name="trash" size={20} color="red" />
             </TouchableOpacity>
           )}
         </View>
-      </View>
-      {showComments && (
-        <View style={styles.commentsSection}>
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onLongPress={() => confirmDeleteComment(item.id, item.userId)}
-                style={styles.commentContainer}
-              >
-                <Image
-                  source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
-                  style={styles.commentUserImg}
-                />
-                <View style={styles.commentTextContainer}>
-                  <Text style={styles.commentUsername}>{item.username}</Text>
-                  <Text style={styles.commentText}>{item.comment}</Text>
-                  <Text style={styles.commentTimestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-          <View style={styles.addCommentContainer}>
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Add a comment..."
-              value={newComment}
-              onChangeText={setNewComment}
+
+        {showComments && (
+          <View style={styles.commentsSection}>
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onLongPress={() => confirmDeleteComment(item.id, item.userId)}
+                  style={styles.commentContainer}
+                >
+                  <Image
+                    source={{ uri: item.userImgUrl || '../../pic/avtar.png' }}
+                    style={styles.userImg}
+                  />
+                  <View style={styles.commentContent}>
+                    <Text style={styles.commentUsername}>{item.username}</Text>
+                    <Text style={styles.commentTimestamp}>
+                      {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString()}
+                    </Text>
+                    <Text style={styles.commentText}>{item.comment}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
             />
-            <TouchableOpacity onPress={handleAddComment} style={styles.sendButton}>
-              <Icon name="send" size={20} color="#000" />
-            </TouchableOpacity>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a comment..."
+                value={newComment}
+                onChangeText={setNewComment}
+              />
+              <TouchableOpacity onPress={handleAddComment} style={styles.sendButton}>
+                <Icon name="paper-plane" size={20} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
-    paddingHorizontal: 15,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   card: {
+    padding: 10,
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 5,
-    elevation: 2,
+    elevation: 5,
   },
   userInfo: {
     flexDirection: 'row',
@@ -316,7 +313,8 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    color: '#2e64e5',
+    marginBottom: 2,
   },
   postTime: {
     fontSize: 12,
@@ -325,21 +323,23 @@ const styles = StyleSheet.create({
   postTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 10,
+    marginTop: 10,
+    marginBottom: 5,
   },
   postImage: {
     width: '100%',
     height: 200,
     borderRadius: 10,
-    marginVertical: 10,
+    marginBottom: 10,
   },
   postContent: {
     fontSize: 16,
+    color: '#333',
     marginBottom: 10,
   },
   separator: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    height: 1,
+    backgroundColor: '#ddd',
     marginVertical: 10,
   },
   iconContainer: {
@@ -352,63 +352,55 @@ const styles = StyleSheet.create({
   },
   iconText: {
     marginLeft: 5,
-  },
-  reportIcon: {
-    width: 20,
-    height: 20,
+    fontSize: 14,
+    color: '#333',
   },
   commentsSection: {
+    marginTop: 10,
+    padding: 10,
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
-    padding: 10,
-    marginTop: 10,
   },
   commentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
-  commentUserImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  commentTextContainer: {
-    marginLeft: 10,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 10,
-    padding: 10,
+  commentContent: {
     flex: 1,
+    marginLeft: 10,
   },
   commentUsername: {
-    fontSize: 14,
     fontWeight: 'bold',
   },
   commentText: {
     fontSize: 14,
+    color: '#333',
   },
   commentTimestamp: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#666',
-    marginTop: 5,
+    marginBottom: 5,
   },
-  addCommentContainer: {
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
   },
-  commentInput: {
+  input: {
     flex: 1,
-    borderColor: '#ccc',
     borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
+    padding: 10,
+    fontSize: 14,
     marginRight: 10,
   },
   sendButton: {
     padding: 10,
+    borderRadius: 20,
   },
 });
 
 export default PostCard;
+
