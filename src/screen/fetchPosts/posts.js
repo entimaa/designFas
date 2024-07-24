@@ -146,8 +146,9 @@ const PostsSection = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: '#D0B8A8',
+    
     flex: 1,
-    backgroundColor: '#ffffff',
     paddingVertical: 10,
   },
   searchContainer: {
@@ -156,7 +157,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 3,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#ffffff',
+   
     borderRadius: 20,
     marginHorizontal: 18,
     shadowColor: 'blue',

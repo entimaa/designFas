@@ -200,7 +200,8 @@ const PostsSection = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff', // تغيير لون الخلفية
+    backgroundColor: '#D0B8A8',
+   
     paddingVertical: 10, // إضافة حشو أعلى وأسفل
   },
   searchContainer: {

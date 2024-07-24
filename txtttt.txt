@@ -81,3 +81,9 @@ const styles = StyleSheet.create({
 
 export default PostsSection;
 */
+
+//#DFD3C3
+//#F8EDE3
+#D0B8A8
+#8D493A
+#A0937D

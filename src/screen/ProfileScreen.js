@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
@@ -14,6 +14,7 @@ const ProfileScreen = ({ route }) => {
   const { user, signOutUser, userName, userType, userImgUrl } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState(route.params?.userImgUrl || userImgUrl);
   const [profileUserName, setProfileUserName] = useState(route.params?.username || userName);
@@ -25,78 +26,94 @@ const ProfileScreen = ({ route }) => {
   const [followingList, setFollowingList] = useState([]);
   const [followersModalVisible, setFollowersModalVisible] = useState(false);
   const [followingModalVisible, setFollowingModalVisible] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [bio, setBio] = useState('');
+  const [slopeColor, setSlopeColor] = useState('#ff6347'); // اللون الافتراضي للمنحدر
 
   const isCurrentUser = !route.params || route.params.userId === user.uid;
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      setLoading(true);
-      try {
-        const userId = route.params ? route.params.userId : user.uid;
-        let userDoc = await getDoc(doc(db, "userDesigner", userId));
+  // Function to fetch profile data
+  const fetchProfileData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const userId = route.params ? route.params.userId : user.uid;
+      let userDoc = await getDoc(doc(db, "userDesigner", userId));
 
-        if (!userDoc.exists()) {
-          userDoc = await getDoc(doc(db, "userClient", userId));
-        }
+      if (!userDoc.exists()) {
+        userDoc = await getDoc(doc(db, "userClient", userId));
+      }
 
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setProfileImageUrl(userData.userImgUrl || route.params?.userImgUrl || userImgUrl);
+        setProfileUserName(userData.username || route.params?.username || userName);
+        setProfileUserType(userData.userType || userType);
+        setPhoneNumber(userData.phoneNumber || '');
+        setCountry(userData.country || '');
+        setCity(userData.city || '');
+        setBio(userData.bio || '');
+
+        // Get followers count
+        const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
+        setFollowersCount(followersSnap.size);
+        setFollowersList(followersSnap.docs.map(doc => doc.data()));
+
+        // Get following count
+        const followingSnap = await getDocs(collection(db, "following", userId, "userFollowing"));
+        setFollowingCount(followingSnap.size);
+        setFollowingList(followingSnap.docs.map(doc => doc.data()));
+
+        // Get posts count
+        const postsSnap = await getDocs(query(collection(db, "postsDesigner"), where("userId", "==", userId)));
+        setPostsCount(postsSnap.size);
+
+      } else {
+        console.error("User not found");
+      }
+
+      // Check if the current user is following this profile user
+      const followingDoc = await getDoc(doc(db, "following", user.uid, "userFollowing", userId));
+      setIsFollowing(followingDoc.exists());
+
+      const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", userId));
+      const querySnapshot = await getDocs(postsQuery);
+      const postsData = [];
+      for (const docSnap of querySnapshot.docs) {
+        const postData = docSnap.data();
+        let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
+        let userImgUrl = null;
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setProfileImageUrl(userData.userImgUrl || route.params?.userImgUrl || userImgUrl);
-          setProfileUserName(userData.username || route.params?.username || userName);
-          setProfileUserType(userData.userType || userType);
-          
-          // Get followers count
-          const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
-          setFollowersCount(followersSnap.size);
-          setFollowersList(followersSnap.docs.map(doc => doc.data()));
-
-          // Get following count
-          const followingSnap = await getDocs(collection(db, "following", userId, "userFollowing"));
-          setFollowingCount(followingSnap.size);
-          setFollowingList(followingSnap.docs.map(doc => doc.data()));
-          
-          // Get posts count
-          const postsSnap = await getDocs(query(collection(db, "postsDesigner"), where("userId", "==", userId)));
-          setPostsCount(postsSnap.size);
-          
+          userImgUrl = userDoc.data().userImgUrl;
         } else {
-          console.error("User not found");
-        }
-
-        // Check if the current user is following this profile user
-        const followingDoc = await getDoc(doc(db, "following", user.uid, "userFollowing", userId));
-        setIsFollowing(followingDoc.exists());
-
-        const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", userId));
-        const querySnapshot = await getDocs(postsQuery);
-        const postsData = [];
-        for (const docSnap of querySnapshot.docs) {
-          const postData = docSnap.data();
-          let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
-          let userImgUrl = null;
+          userDoc = await getDoc(doc(db, "userClient", postData.userId));
           if (userDoc.exists()) {
             userImgUrl = userDoc.data().userImgUrl;
-          } else {
-            userDoc = await getDoc(doc(db, "userClient", postData.userId));
-            if (userDoc.exists()) {
-              userImgUrl = userDoc.data().userImgUrl;
-            }
           }
-          postsData.push({ id: docSnap.id, ...postData, userImgUrl });
         }
-        setPosts(postsData);
-      } catch (error) {
-        console.error('Error fetching posts: ', error);
-      } finally {
-        setLoading(false);
+        postsData.push({ id: docSnap.id, ...postData, userImgUrl });
       }
-    };
-
-    fetchProfileData();
+      setPosts(postsData);
+    } catch (error) {
+      console.error('Error fetching posts: ', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false); // End refresh animation
+    }
   }, [user, route.params]);
 
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
+
   const handleLogout = async () => {
-    await signOutUser();
+    try {
+      await signOutUser();
+      navigation.navigate('Login');
+    } catch (error) {
+      console.error('Error signing out: ', error);
+    }
   };
 
   const handleSendMessage = () => {
@@ -107,9 +124,9 @@ const ProfileScreen = ({ route }) => {
 
   const handleFollow = async () => {
     if (!user.uid || !route.params.userId) return;
-  
+
     const userId = route.params.userId;
-  
+
     if (isFollowing) {
       // Unfollow user
       await deleteDoc(doc(db, "following", user.uid, "userFollowing", userId));
@@ -153,105 +170,161 @@ const ProfileScreen = ({ route }) => {
     setFollowingModalVisible(!followingModalVisible);
   };
 
-  return (
-    <View style={styles.container}>
-      {!isCurrentUser && (
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-left" size={25} color="#000" />
-        </TouchableOpacity>
-      )}
-      
-      <View style={styles.topContainer}>
-        <Image
-          style={styles.userImg}
-          source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
-        />
-        <Text style={styles.userName}>{userName}</Text>
-        {profileUserType && <Text style={styles.userType}>{profileUserType}</Text>}
-        {!isCurrentUser && (
-          <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
-            <Icon name="envelope" size={25} color="#fff" />
-          </TouchableOpacity>
-        )}
-        {!isCurrentUser && (
-          <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
-            <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
-          </TouchableOpacity>
-        )}
-       {isCurrentUser && (
-  <View style={styles.userActionsContainer}>
-    <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
-      <Icon name="edit" size={25} color="#000" />
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-      <Text style={styles.logoutButtonText}>Logout</Text>
-    </TouchableOpacity>
-  </View>
-)}
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchProfileData();
+  };
 
-       
-      </View>
-      <View style={styles.statsContainer}>
-        <TouchableOpacity onPress={toggleFollowersModal}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{followersCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={toggleFollowingModal}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
-          </View>
-        </TouchableOpacity>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{postsCount}</Text>
-          <Text style={styles.statLabel}>Posts</Text>
+  const changeSlopeColor = () => {
+    // Change the slope color to a random color or a specific color
+    setSlopeColor(slopeColor === '#D0B8A8' ? '#B6C7AA' : '#D0B8A8'); // مثال لتبديل بين لونين
+  };
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.scrollViewContainer}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+    >
+      <View style={styles.profileContainer}>
+        <View style={[styles.slope, { backgroundColor: slopeColor }]}>
+          <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
+            <Icon name="paint-brush" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Image
+            style={styles.profileImage}
+            source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
+          />
         </View>
-      </View>
-      <ScrollView contentContainerStyle={styles.postsContainer}>
-      {loading ? (
-          <ActivityIndicator size="large" color="#000" />
-        ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+
+        {!isCurrentUser && (
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="chevron-left" size={25} color="#000" />
+          </TouchableOpacity>
         )}
-      </ScrollView>
-      <FollowersModal 
-        modalVisible={followersModalVisible} 
-        toggleFollowersModal={toggleFollowersModal} 
-        followersList={followersList} 
-      />
-      <FollowingModal 
-        modalVisible={followingModalVisible} 
-        toggleFollowingModal={toggleFollowingModal} 
-        followingList={followingList} 
-      />
-    </View>
+
+        <View style={styles.profileContent}>
+          <View style={styles.userInfoContainer}>
+            <Text style={styles.userName}>{profileUserName}</Text>
+            {profileUserType && <Text style={styles.userType}>{profileUserType}</Text>}
+            {phoneNumber && <Text style={styles.userInfoText}>Phone: {phoneNumber}</Text>}
+                        {country && <Text style={styles.userInfoText}>Country: {country}</Text>}
+            {city && <Text style={styles.userInfoText}>City: {city}</Text>}
+            {bio && <Text style={styles.userInfoText}>Bio: {bio}</Text>}
+            {!isCurrentUser && (
+              <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
+                <Icon name="envelope" size={25} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {!isCurrentUser && (
+              <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
+                <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
+              </TouchableOpacity>
+            )}
+            {isCurrentUser && (
+              <View style={styles.userActionsContainer}>
+                <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
+                  <Icon name="edit" size={23} color="#000" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                  <Icon name="sign-out" size={25} color="#000" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      
+        <View style={styles.statsContainer}>
+          <TouchableOpacity onPress={toggleFollowersModal}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{followersCount}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleFollowingModal}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{followingCount}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{postsCount}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
+          </View>
+        </View>
+      
+        <View style={styles.postsContainer}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#ff0066" />
+          ) : (
+            posts.map((post) => <PostCard key={post.id} post={post} />)
+          )}
+        </View>
+      
+        <FollowersModal 
+          modalVisible={followersModalVisible} 
+          toggleFollowersModal={toggleFollowersModal} 
+          followersList={followersList} 
+        />
+        <FollowingModal 
+          modalVisible={followingModalVisible} 
+          toggleFollowingModal={toggleFollowingModal} 
+          followingList={followingList} 
+        />
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scrollViewContainer: {
+    flexGrow: 1,
+  },
+  profileContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 20,
     backgroundColor: '#fff',
+  },
+  slope: {
+    height: 150,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  changeColorButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#fff',
+    marginBottom: 10,
   },
   backButton: {
     padding: 10,
   },
-  editButton: {
-    marginHorizontal: 7,
-    paddingVertical: 5,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-  },
-  topContainer: {
+  profileContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginBottom: 20,
   },
-  userImg: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  userInfoContainer: {
+    marginLeft: 10,
+    flex: 1,
   },
   userName: {
     fontSize: 22,
@@ -261,6 +334,10 @@ const styles = StyleSheet.create({
   userType: {
     fontSize: 18,
     color: '#666',
+  },
+  userInfoText: {
+    fontSize: 16,
+    color: '#444',
   },
   messageButton: {
     marginTop: 10,
@@ -281,15 +358,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutButton: {
-    marginHorizontal: 7,
-    backgroundColor: '#d9534f',
-    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 30,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -313,11 +382,11 @@ const styles = StyleSheet.create({
   userActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
   },
-  
+  editButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
 });
 
 export default ProfileScreen;
-
-         

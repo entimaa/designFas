@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app, db, storage } from '../../data/DataFirebase';
-import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const AuthContext = createContext();
@@ -15,13 +15,11 @@ export const AuthProvider = ({ children }) => {
   const [userImgUrl, setUserImgUrl] = useState(null);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [posts, setPosts] = useState([]); // حالة لتخزين المنشورات
+  const [posts, setPosts] = useState([]);
   const auth = getAuth(app);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-
       if (currentUser) {
         try {
           let userDocRef = doc(db, 'userClient', currentUser.uid);
@@ -34,22 +32,27 @@ export const AuthProvider = ({ children }) => {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setUserName(userData.name);
-            setUserType(userData.type);
+            setUser(currentUser);
+            setUserName(userData.name || '');
+            setUserType(userData.type || '');
             setUserImgUrl(userData.userImgUrl || null);
             setFollowersCount(userData.followersCount || 0);
             setFollowingCount(userData.followingCount || 0);
-
-            // تحميل المنشورات عند تسجيل الدخول
             await fetchPosts();
-
           } else {
             console.log("No such document!");
+            setUser(null);
+            setUserName('');
+            setUserType('');
+            setUserImgUrl(null);
+            setFollowersCount(0);
+            setFollowingCount(0);
           }
         } catch (error) {
           console.error("Error fetching user document:", error);
         }
       } else {
+        setUser(null);
         setUserName('');
         setUserType('');
         setUserImgUrl(null);
@@ -116,17 +119,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signIn = async (email, password) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error('Error signing in:', error.message);
+    }
   };
 
   const signOutUser = async () => {
-    await signOut(auth);
-    setUserName('');
-    setUserType('');
-    setUserImgUrl(null);
-    setFollowersCount(0);
-    setFollowingCount(0);
-    setPosts([]); // تفريغ المنشورات عند تسجيل الخروج
+    try {
+      await auth.signOut();
+      setUser(null);
+      setUserName('');
+      setUserType('');
+      setUserImgUrl(null);
+      setFollowersCount(0);
+      setFollowingCount(0);
+      navigation.navigate('LoginScreen');
+    } catch (error) {
+      console.error('Error signing out:', error.message);
+    }
   };
 
   const uploadUserProfileImage = async (userId, image) => {
@@ -141,7 +153,27 @@ export const AuthProvider = ({ children }) => {
 
       setUserImgUrl(downloadURL);
     } catch (error) {
-      console.error('Error uploading profile image:', error);
+      console.error('Error uploading profile image:', error.message);
+    }
+  };
+
+  // دالة لتحديث المعلومات الشخصية
+  const updateUserProfile = async (newData) => {
+    if (user) {
+      try {
+        const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
+        const userDocRef = doc(db, collectionPath, user.uid);
+
+        await updateDoc(userDocRef, newData);
+        
+        // تحديث الحالة المحلية
+        if (newData.name) setUserName(newData.name);
+        if (newData.userImgUrl) setUserImgUrl(newData.userImgUrl);
+        if (newData.followersCount) setFollowersCount(newData.followersCount);
+        if (newData.followingCount) setFollowingCount(newData.followingCount);
+      } catch (error) {
+        console.error('Error updating user profile:', error.message);
+      }
     }
   };
 
@@ -153,12 +185,13 @@ export const AuthProvider = ({ children }) => {
       userImgUrl, 
       followersCount, 
       followingCount, 
-      posts, // إضافة المنشورات إلى القيمة المقدمة
-      setPosts, // إضافة دالة لتحديث المنشورات إذا لزم الأمر
+      posts, 
+      setPosts, 
       setUserImgUrl, 
       signUp, 
       signIn, 
-      signOutUser 
+      signOutUser,
+      updateUserProfile // إضافة دالة التحديث إلى القيمة المقدمة
     }}>
       {children}
     </AuthContext.Provider>

@@ -3,13 +3,15 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert, Scro
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { db, storage } from '../../data/DataFirebase';
-import { doc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { doc, setDoc, collection, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { BlurView } from 'expo-blur';
 import ActionSheet from 'react-native-actionsheet';
 
+const defaultAvatarUri = '../pic/avatar.png'; // Path to the default avatar image
+
 const EditProfile = () => {
-  const { user, userName, userType, userImgUrl, setUserImgUrl } = useAuth();
+  const { user, userType, userImgUrl, setUserImgUrl } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
@@ -21,10 +23,30 @@ const EditProfile = () => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (userName) {
-      setName(userName);
+    if (user) {
+      const loadUserData = async () => {
+        try {
+          const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
+          const userDocRef = doc(db, collectionPath, user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setName(userData.name || '');
+            setPhone(userData.phone || '');
+            setCountry(userData.country || '');
+            setCity(userData.city || '');
+            setBio(userData.bio || '');
+            setImage(userData.userImgUrl || defaultAvatarUri);
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        }
+      };
+
+      loadUserData();
     }
-  }, [userName]);
+  }, [user, userType]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -50,50 +72,79 @@ const EditProfile = () => {
     }
   };
 
+  const deleteImage = async () => {
+    if (!userImgUrl) {
+      Alert.alert('No Image to Delete', 'There is no image to delete.');
+      return;
+    }
+
+    try {
+      const storageRef = ref(storage, userImgUrl);
+      await deleteObject(storageRef);
+
+      // Update Firestore to set userImgUrl to null
+      const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
+      const userDocRef = doc(db, collectionPath, user.uid);
+      await setDoc(userDocRef, { userImgUrl: null }, { merge: true });
+
+      setImage(defaultAvatarUri);
+      setUserImgUrl(null);
+      Alert.alert('Image Deleted', 'Profile image has been deleted.');
+    } catch (error) {
+      console.error('Delete Error: ', error);
+      Alert.alert('Delete Error', 'Failed to delete the image. Please try again later.');
+    }
+  };
+
   const uploadImage = async () => {
-    if (!image) {
+    if (!image && !userImgUrl) {
       Alert.alert("No Image Selected", "Please select an image first.");
       return;
     }
 
-    const uploadUri = image;
-    let filename = uploadUri.substring(uploadUri.lastIndexOf("/") + 1);
-    const ext = filename.split(".").pop();
-    const name = filename.split(".").slice(0, -1).join(".");
-    filename = name + Date.now() + "." + ext;
+    let imageUrl = userImgUrl;
+    if (image) {
+      const uploadUri = image;
+      let filename = uploadUri.substring(uploadUri.lastIndexOf("/") + 1);
+      const ext = filename.split(".").pop();
+      const name = filename.split(".").slice(0, -1).join(".");
+      filename = name + Date.now() + "." + ext;
 
-    setUploading(true);
+      setUploading(true);
 
-    try {
-      const response = await fetch(image);
-      const blob = await response.blob();
+      try {
+        const response = await fetch(image);
+        const blob = await response.blob();
 
-      const storageRef = ref(storage, `userImages/${filename}`);
+        const storageRef = ref(storage, `userImages/${filename}`);
 
-      const uploadTask = uploadBytesResumable(storageRef, blob);
+        const uploadTask = uploadBytesResumable(storageRef, blob);
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setProgress(progress.toFixed());
-        },
-        (error) => {
-          console.error(error);
-          setUploading(false);
-          Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          setUploading(false);
-          Alert.alert("Upload Success", "Image uploaded successfully!");
-          handleSaveProfile(url);  // Pass the new image URL to the save profile function
-        }
-      );
-    } catch (error) {
-      console.error("Upload Error: ", error);
-      setUploading(false);
-      Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setProgress(progress.toFixed());
+          },
+          (error) => {
+            console.error(error);
+            setUploading(false);
+            Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
+          },
+          async () => {
+            imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            setUploading(false);
+            Alert.alert("Upload Success", "Image uploaded successfully!");
+            handleSaveProfile(imageUrl);  // Pass the new image URL to the save profile function
+          }
+        );
+      } catch (error) {
+        console.error("Upload Error: ", error);
+        setUploading(false);
+        Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
+      }
+    } else {
+      handleSaveProfile(imageUrl);  // Pass the existing image URL to the save profile function
     }
   };
 
@@ -146,6 +197,8 @@ const EditProfile = () => {
       pickImage();
     } else if (index === 1) {
       takePhoto();
+    } else if (index === 2) {
+      deleteImage();
     }
   };
 
@@ -155,7 +208,7 @@ const EditProfile = () => {
         <TouchableOpacity onPress={showActionSheet}>
           <View style={styles.imageContainer}>
             <View style={styles.borderContainer}>
-              <Image source={image ? { uri: image } : { uri: userImgUrl || 'default_image_uri' }} style={styles.userImg} />
+              <Image source={image ? { uri: image } : { uri: userImgUrl || defaultAvatarUri }} style={styles.userImg} />
               <BlurView intensity={20} style={styles.blurView}>
                 <Text style={styles.blurText}>Change Photo</Text>
               </BlurView>
@@ -199,15 +252,15 @@ const EditProfile = () => {
           onChangeText={(text) => setBio(text)}
         />
 
-        <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
+                <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
           <Text style={styles.buttonText}>Save Profile</Text>
         </TouchableOpacity>
 
         <ActionSheet
           ref={actionSheetRef}
           title={'Select an option'}
-          options={['Choose from Library', 'Take a Photo', 'Cancel']}
-          cancelButtonIndex={2}
+          options={['Choose from Library', 'Take a Photo', 'Delete Photo', 'Cancel']}
+          cancelButtonIndex={3}
           onPress={handleActionSheet}
         />
       </ScrollView>
@@ -286,3 +339,4 @@ const styles = StyleSheet.create({
 });
 
 export default EditProfile;
+ 
