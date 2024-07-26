@@ -30,7 +30,7 @@ const ProfileScreen = ({ route }) => {
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
-  const [slopeColor, setSlopeColor] = useState('#ff6347'); // اللون الافتراضي للمنحدر
+  const [slopeColor, setSlopeColor] = useState('#D0B8A8'); // اللون الافتراضي للمنحدر
 
   const isCurrentUser = !route.params || route.params.userId === user.uid;
 
@@ -50,7 +50,7 @@ const ProfileScreen = ({ route }) => {
         setProfileImageUrl(userData.userImgUrl || route.params?.userImgUrl || userImgUrl);
         setProfileUserName(userData.username || route.params?.username || userName);
         setProfileUserType(userData.userType || userType);
-        setPhoneNumber(userData.phoneNumber || '');
+        setPhoneNumber(userData.phone || '');
         setCountry(userData.country || '');
         setCity(userData.city || '');
         setBio(userData.bio || '');
@@ -195,10 +195,13 @@ const ProfileScreen = ({ route }) => {
           <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
             <Icon name="paint-brush" size={20} color="#fff" />
           </TouchableOpacity>
-          <Image
-            style={styles.profileImage}
-            source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
-          />
+          <View style={styles.profileImageContainer}>
+            <Image
+              style={styles.profileImage}
+              source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
+            />
+            <Text style={styles.userName}>{profileUserName}</Text>
+          </View>
         </View>
 
         {!isCurrentUser && (
@@ -208,13 +211,28 @@ const ProfileScreen = ({ route }) => {
         )}
 
         <View style={styles.profileContent}>
-          <View style={styles.userInfoContainer}>
-            <Text style={styles.userName}>{profileUserName}</Text>
-            {profileUserType && <Text style={styles.userType}>{profileUserType}</Text>}
+        <View style={styles.userInfoContainer}>
+            {profileUserType && (
+              <View style={styles.userTypeContainer}>
+                <Text style={styles.userType}>{profileUserType}</Text>
+                {isCurrentUser && (
+                  <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
+                    <Icon name="edit" size={20} color="#000" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            <View style={styles.locationContainer}>
+              {city && <Text style={styles.locationText}>{city}</Text>}
+              {country && (
+                <>
+                  <Text style={styles.locationSeparator}>|</Text>
+                  <Text style={styles.locationText}>{country}</Text>
+                </>
+              )}
+            </View>
             {phoneNumber && <Text style={styles.userInfoText}>Phone: {phoneNumber}</Text>}
-                        {country && <Text style={styles.userInfoText}>Country: {country}</Text>}
-            {city && <Text style={styles.userInfoText}>City: {city}</Text>}
-            {bio && <Text style={styles.userInfoText}>Bio: {bio}</Text>}
+            {bio && <Text style={styles.bioText}>Bio: {bio}</Text>}
             {!isCurrentUser && (
               <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
                 <Icon name="envelope" size={25} color="#fff" />
@@ -225,19 +243,17 @@ const ProfileScreen = ({ route }) => {
                 <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
               </TouchableOpacity>
             )}
+          </View>
+
+          <View style={styles.userActionsContainer}>
             {isCurrentUser && (
-              <View style={styles.userActionsContainer}>
-                <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
-                  <Icon name="edit" size={23} color="#000" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                  <Icon name="sign-out" size={25} color="#000" />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Icon name="sign-out" size={25} color="#000" />
+              </TouchableOpacity>
             )}
           </View>
         </View>
-      
+
         <View style={styles.statsContainer}>
           <TouchableOpacity onPress={toggleFollowersModal}>
             <View style={styles.statItem}>
@@ -256,7 +272,7 @@ const ProfileScreen = ({ route }) => {
             <Text style={styles.statLabel}>Posts</Text>
           </View>
         </View>
-      
+
         <View style={styles.postsContainer}>
           {loading ? (
             <ActivityIndicator size="large" color="#ff0066" />
@@ -264,7 +280,7 @@ const ProfileScreen = ({ route }) => {
             posts.map((post) => <PostCard key={post.id} post={post} />)
           )}
         </View>
-      
+
         <FollowersModal 
           modalVisible={followersModalVisible} 
           toggleFollowersModal={toggleFollowersModal} 
@@ -285,14 +301,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   profileContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 0,
     backgroundColor: '#fff',
   },
   slope: {
-    height: 150,
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
+    height: 140,
+    borderBottomLeftRadius: 160,
+    borderBottomRightRadius: 10,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -306,38 +322,71 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 20,
   },
+  profileImageContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
+    borderRadius: 60,
+    borderWidth: 1,
     borderColor: '#fff',
-    marginBottom: 10,
+    marginBottom: 1,
+  },
+  userName: {
+    fontSize: 19,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
   },
   backButton: {
     padding: 10,
   },
   profileContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 6,
   },
   userInfoContainer: {
-    marginLeft: 10,
-    flex: 1,
+    paddingHorizontal: 10,
+    marginBottom:0,
   },
-  userName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginVertical: 5,
+  userTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   userType: {
     fontSize: 18,
     color: '#666',
   },
+  editButton: {
+    right:260,
+    paddingHorizontal: 0,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  locationText: {
+    fontSize: 16,
+    color: '#444',
+  },
+  locationSeparator: {
+    fontSize: 16,
+    color: '#444',
+    marginHorizontal: 5,
+  },
   userInfoText: {
     fontSize: 16,
     color: '#444',
+    marginTop: 5,
+  },
+  bioText: {
+    fontSize: 16,
+    color: '#444',
+    marginTop: 10,
+    marginBottom: 15,
   },
   messageButton: {
     marginTop: 10,
@@ -345,6 +394,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
+    alignItems: 'center',
   },
   followButton: {
     marginTop: 10,
@@ -352,13 +402,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
+    alignItems: 'center',
   },
   followButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-  },
-  logoutButton: {
-    paddingHorizontal: 20,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -379,14 +427,8 @@ const styles = StyleSheet.create({
   postsContainer: {
     paddingHorizontal: 10,
   },
-  userActionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  editButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
 });
 
 export default ProfileScreen;
+
+         

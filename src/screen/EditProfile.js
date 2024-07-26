@@ -3,15 +3,16 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert, Scro
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { db, storage } from '../../data/DataFirebase';
-import { doc, setDoc, collection, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { BlurView } from 'expo-blur';
 import ActionSheet from 'react-native-actionsheet';
+import { signOut, deleteUser } from 'firebase/auth';
 
 const defaultAvatarUri = '../pic/avatar.png'; // Path to the default avatar image
 
 const EditProfile = () => {
-  const { user, userType, userImgUrl, setUserImgUrl } = useAuth();
+  const { user, userType, userImgUrl, setUserImgUrl, auth } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
@@ -19,6 +20,7 @@ const EditProfile = () => {
   const [bio, setBio] = useState('');
   const [image, setImage] = useState(null);
   const actionSheetRef = useRef();
+  const optionActionSheetRef = useRef();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -188,10 +190,6 @@ const EditProfile = () => {
     }
   };
 
-  const showActionSheet = () => {
-    actionSheetRef.current.show();
-  };
-
   const handleActionSheet = (index) => {
     if (index === 0) {
       pickImage();
@@ -202,141 +200,212 @@ const EditProfile = () => {
     }
   };
 
+  const handleOptionActionSheet = async (index) => {
+    if (index === 0) {
+      await deleteAccount();
+    } else if (index === 1) {
+      handleLogOut();
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (user) {
+      try {
+        // Remove user data from Firestore
+        const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
+        const userDocRef = doc(db, collectionPath, user.uid);
+        await deleteDoc(userDocRef);
+
+        // Delete the user's profile image from Storage
+        if (userImgUrl) {
+          const storageRef = ref(storage, userImgUrl);
+          await deleteObject(storageRef);
+        }
+
+        // Delete the user account
+        await deleteUser(auth.currentUser);
+
+        Alert.alert('Account Deleted', 'Your account has been deleted successfully.');
+      } catch (error) {
+        console.error('Delete Account Error: ', error);
+        Alert.alert('Delete Account Error', 'Failed to delete the account. Please try again later.');
+      }
+    }
+  };
+
+  const handleLogOut = async () => {
+    try {
+      await signOut(auth);
+      Alert.alert('Logged Out', 'You have been logged out successfully.');
+    } catch (error) {
+      console.error('Log Out Error: ', error);
+      Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+    }
+  };
+
+  const showActionSheet = () => {
+    actionSheetRef.current.show();
+  };
+
+  const showOptionActionSheet = () => {
+    optionActionSheetRef.current.show();
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <ScrollView contentContainerStyle={styles.container}>
-        <TouchableOpacity onPress={showActionSheet}>
-          <View style={styles.imageContainer}>
-            <View style={styles.borderContainer}>
-              <Image source={image ? { uri: image } : { uri: userImgUrl || defaultAvatarUri }} style={styles.userImg} />
-              <BlurView intensity={20} style={styles.blurView}>
-                <Text style={styles.blurText}>Change Photo</Text>
-              </BlurView>
-            </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <TouchableOpacity onPress={showActionSheet}>
+        <View style={styles.imageContainer}>
+          <View style={styles.borderContainer}>
+            <Image source={image ? { uri: image } : { uri: userImgUrl || defaultAvatarUri }} style={styles.userImg} />
+            <BlurView intensity={20} style={styles.blurView}>
+              <Text style={styles.blurText}>Change Photo</Text>
+            </BlurView>
           </View>
-        </TouchableOpacity>
-        <Text style={styles.title}>Edit Profile</Text>
+        </View>
+      </TouchableOpacity>
+      <Text style={styles.title}>Edit Profile</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Name"
-          value={name}
-          onChangeText={(text) => setName(text)}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Name"
+        value={name}
+        onChangeText={(text) => setName(text)}
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Phone Number"
-          value={phone}
-          onChangeText={(text) => setPhone(text)}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Phone Number"
+        value={phone}
+        onChangeText={(text) => setPhone(text)}
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Country"
-          value={country}
-          onChangeText={(text) => setCountry(text)}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Country"
+        value={country}
+        onChangeText={(text) => setCountry(text)}
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="City"
-          value={city}
-          onChangeText={(text) => setCity(text)}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="City"
+        value={city}
+        onChangeText={(text) => setCity(text)}
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Bio"
-          value={bio}
-          onChangeText={(text) => setBio(text)}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Bio"
+        value={bio}
+        onChangeText={(text) => setBio(text)}
+      />
 
-                <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
-          <Text style={styles.buttonText}>Save Profile</Text>
-        </TouchableOpacity>
+      <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
+        <Text style={styles.buttonText}>Save Profile</Text>
+      </TouchableOpacity>
 
-        <ActionSheet
-          ref={actionSheetRef}
-          title={'Select an option'}
-          options={['Choose from Library', 'Take a Photo', 'Delete Photo', 'Cancel']}
-          cancelButtonIndex={3}
-          onPress={handleActionSheet}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+      <TouchableOpacity onPress={showOptionActionSheet} style={styles.optionButton}>
+        <Text style={styles.buttonText}>Account Options</Text>
+      </TouchableOpacity>
+
+      <ActionSheet
+        ref={actionSheetRef}
+        title={'Select an option'}
+        options={['Choose from Library', 'Take a Photo', 'Delete Photo', 'Cancel']}
+        cancelButtonIndex={3}
+        onPress={handleActionSheet}
+      />
+
+      <ActionSheet
+        ref={optionActionSheetRef}
+        title={'Account Options'}
+        options={['Delete Account', 'Log Out', 'Cancel']}
+        cancelButtonIndex={2}
+        onPress={handleOptionActionSheet}
+      />
+    </ScrollView>
+  </KeyboardAvoidingView>
+);
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    width: '100%',
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 20,
-  },
-  saveButton: {
-    width: '100%',
-    height: 40,
-    backgroundColor: '#007AFF',
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  imageContainer: {
-    position: 'relative',
-    marginBottom: 20,
-  },
-  borderContainer: {
-    backgroundColor: '#0066CC',
-    borderRadius: 75,
-    borderWidth: 0.4,
-    borderColor: '#0066CC',
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userImg: {
-    height: 150,
-    width: 150,
-    borderRadius: 75, // Ensure the image is circular
-  },
-  blurView: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  blurText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
+container: {
+  flexGrow: 1,
+  padding: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#fff',
+},
+title: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  marginBottom: 20,
+},
+input: {
+  width: '100%',
+  height: 40,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 5,
+  padding: 10,
+  marginBottom: 20,
+},
+saveButton: {
+  width: '100%',
+  height: 40,
+  backgroundColor: '#007AFF',
+  borderRadius: 5,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 20,
+},
+optionButton: {
+  width: '100%',
+  height: 40,
+  backgroundColor: '#FF3B30',
+  borderRadius: 5,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 20,
+},
+buttonText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: 'bold',
+},
+imageContainer: {
+  position: 'relative',
+  marginBottom: 20,
+},
+borderContainer: {
+  backgroundColor: '#0066CC',
+  borderRadius: 75,
+  borderWidth: 0.4,
+  borderColor: '#0066CC',
+  overflow: 'hidden',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+userImg: {
+  height: 150,
+  width: 150,
+  borderRadius: 75, // Ensure the image is circular
+},
+blurView: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+blurText: {
+  color: '#fff',
+  fontSize: 15,
+  fontWeight: 'bold',
+},
 });
 
 export default EditProfile;
- 

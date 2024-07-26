@@ -32,30 +32,31 @@ const LoginScreen = ({ navigation }) => {
     setEmailError('');
     setPasswordError('');
     setLoading(true);
+  
     if (!validateEmail(email)) {
       setEmailError('Invalid email format');
-      setTimeout(() => setEmailError(''), 3000);
       setLoading(false);
       return;
     }
-
+  
     if (!validatePassword(password)) {
       setPasswordError('Password must be at least 6 characters long');
-      setTimeout(() => setPasswordError(''), 3000);
       setLoading(false);
       return;
     }
-
+  
     try {
       await signIn(email, password);
-      navigation.navigate('Main');
+      navigation.navigate('Home');
     } catch (error) {
+      console.error("Error signing in:", error); // Log the error for debugging
       const errorMessage = getErrorText(error.code);
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
   };
+  
 
   const handleRegister = () => {
     navigation.navigate('Register');
