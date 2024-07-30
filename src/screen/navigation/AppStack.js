@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from "../../context/AuthContext";
@@ -12,60 +12,79 @@ import Post from "../fetchPosts/Post";
 import AddPost from "../fetchPosts/AddPost";
 import ChatList from '../chat/ChatList';
 import Chat from '../chat/Chat';
-import CommentsScreen from "../fetchPosts/CommentScreen"; // Adding CommentsScreen
+import CommentsScreen from "../fetchPosts/CommentScreen";
+import PostDetailScreen from "../fetchPosts/PostDetailScreen";
+import ActionSheet from 'react-native-actionsheet';
+import { auth } from "../../../data/DataFirebase";
+import { signOut } from 'firebase/auth'; // تأكد من صحة المسار بناءً على مكان وجوده
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const handleLogout = async () => {
-  await signOutUser();
-};
-
 const ProfileStack = () => {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const actionSheetRef = useRef();
+
+  const handleOptionActionSheet = async (index) => {
+    if (index === 0) {
+      // Handle account deletion logic
+      Alert.alert("Delete Account", "Are you sure you want to delete your account?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", onPress: () => console.log("Account Deleted") }
+      ]);
+    } else if (index === 1) {
+      // Show loading indicator
+      Alert.alert("Logging Out", "Please wait while we log you out.", [{ text: "OK" }]);
+      
+      try {
+        await signOut(auth); // Log out user
+        navigation.navigate('LoginScreen'); // Navigate to Login screen
+      } catch (error) {
+        console.error('Log Out Error: ', error);
+        Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+      }
+    }
+  };
+  
+
+  const showActionSheet = () => {
+    actionSheetRef.current?.show();
+  };
+
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="ProfileScreen"
-        component={ProfileScreen}
-        options={{
-          title: ' ',
-          headerTitleAlign: 'center',
-          headerStyle: {
-            shadowColor: '#fff',
-            elevation: 0,
-          },
-          headerShadowVisible: false,
-          headerBackImage: () => (
-            <View style={{ marginLeft: 15 }}>
-              <Icon name="chevron-left" size={25} color="#fff" />
-            </View>
-          ),
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TouchableOpacity
-                style={{ marginRight: 15 }}
-                onPress={() => navigation.navigate('EditProfile')}
-              >
-                <Icon name="edit" size={25} color="#000" />
+    <>
+      <Stack.Navigator>
+        <Stack.Screen
+          name="ProfileScreen"
+          component={ProfileScreen}
+          options={{
+            headerShown: false, // Hide the header completely
+          }}
+          initialParams={{ userId: user.uid, username: user.displayName }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfile}
+          options={{
+            title: '', // Hide title
+            headerRight: () => (
+              <TouchableOpacity onPress={showActionSheet} style={{ marginRight: 15 }}>
+                <Icon name="cog" size={24} color="black" />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={{ marginRight: 15 }}
-                onPress={async () => {
-                  await signOutUser();
-                  navigation.navigate('Login'); // Assuming 'Login' is your login screen name
-                }}
-              >
-                <Icon name="sign-out" size={25} color="#000" />
-              </TouchableOpacity>
-            </View>
-          ),
-        }}
-        initialParams={{ userId: user.uid, username: user.displayName }}
+            ),
+          }}
+        />
+      </Stack.Navigator>
+      <ActionSheet
+        ref={actionSheetRef}
+        title={'Account Options'}
+        options={['Delete Account', 'Log Out', 'Cancel']}
+        cancelButtonIndex={2}
+        destructiveButtonIndex={0}
+        onPress={handleOptionActionSheet}
       />
-      <Stack.Screen name="EditProfile" component={EditProfile} />
-    </Stack.Navigator>
+    </>
   );
 };
 
@@ -183,9 +202,21 @@ const MainStack = () => {
       />
       <Stack.Screen 
         name="Comments" 
-        component={CommentsScreen} // Adding CommentsScreen
+        component={CommentsScreen} 
         options={{
           title: 'Comments',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        }} 
+      />
+      <Stack.Screen 
+        name="PostDetail" 
+        component={PostDetailScreen} 
+        options={{
+          title: 'Post Detail',
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
               <Icon name="chevron-left" size={25} color="#000" />

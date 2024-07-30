@@ -8,6 +8,7 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebas
 import { BlurView } from 'expo-blur';
 import ActionSheet from 'react-native-actionsheet';
 import { signOut, deleteUser } from 'firebase/auth';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Importing an icon library
 
 const defaultAvatarUri = '../pic/avatar.png'; // Path to the default avatar image
 
@@ -20,7 +21,6 @@ const EditProfile = () => {
   const [bio, setBio] = useState('');
   const [image, setImage] = useState(null);
   const actionSheetRef = useRef();
-  const optionActionSheetRef = useRef();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -200,14 +200,6 @@ const EditProfile = () => {
     }
   };
 
-  const handleOptionActionSheet = async (index) => {
-    if (index === 0) {
-      await deleteAccount();
-    } else if (index === 1) {
-      handleLogOut();
-    }
-  };
-
   const deleteAccount = async () => {
     if (user) {
       try {
@@ -247,165 +239,166 @@ const EditProfile = () => {
     actionSheetRef.current.show();
   };
 
-  const showOptionActionSheet = () => {
-    optionActionSheetRef.current.show();
-  };
-
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-    <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity onPress={showActionSheet}>
-        <View style={styles.imageContainer}>
-          <View style={styles.borderContainer}>
-            <Image source={image ? { uri: image } : { uri: userImgUrl || defaultAvatarUri }} style={styles.userImg} />
-            <BlurView intensity={20} style={styles.blurView}>
-              <Text style={styles.blurText}>Change Photo</Text>
-            </BlurView>
+      <ScrollView contentContainerStyle={styles.container}>
+        <TouchableOpacity onPress={showActionSheet}>
+          <View style={styles.imageContainer}>
+            <View style={styles.borderContainer}>
+              <Image source={image ? { uri: image } : { uri: userImgUrl || defaultAvatarUri }} style={styles.userImg} />
+              <BlurView intensity={20} style={styles.blurView}>
+                <Text style={styles.blurText}>Change Photo</Text>
+              </BlurView>
+              </View>
           </View>
+        </TouchableOpacity>
+        <Text style={styles.title}>Edit Profile</Text>
+
+        <View style={styles.inputContainer}>
+          <Icon name="person" size={20} color="#888" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            value={name}
+            onChangeText={(text) => setName(text)}
+          />
         </View>
-      </TouchableOpacity>
-      <Text style={styles.title}>Edit Profile</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={(text) => setName(text)}
-      />
+        <View style={styles.inputContainer}>
+          <Icon name="phone" size={20} color="#2196F3" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Phone Number"
+            value={phone}
+            onChangeText={(text) => setPhone(text)}
+          />
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
-        value={phone}
-        onChangeText={(text) => setPhone(text)}
-      />
+        <View style={styles.inputContainer}>
+          <Icon name="location-on" size={20} color="#db3e00" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Country"
+            value={country}
+            onChangeText={(text) => setCountry(text)}
+          />
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Country"
-        value={country}
-        onChangeText={(text) => setCountry(text)}
-      />
+        <View style={styles.inputContainer}>
+          <Icon name="location-city" size={20} color="#525252" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="City"
+            value={city}
+            onChangeText={(text) => setCity(text)}
+          />
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="City"
-        value={city}
-        onChangeText={(text) => setCity(text)}
-      />
+        <View style={styles.inputContainer}>
+          <Icon name="description" size={20} color="#0016ff" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Bio"
+            value={bio}
+            onChangeText={(text) => setBio(text)}
+          />
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Bio"
-        value={bio}
-        onChangeText={(text) => setBio(text)}
-      />
+        <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
+          <Text style={styles.buttonText}>Save Profile</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={uploadImage} style={styles.saveButton}>
-        <Text style={styles.buttonText}>Save Profile</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={showOptionActionSheet} style={styles.optionButton}>
-        <Text style={styles.buttonText}>Account Options</Text>
-      </TouchableOpacity>
-
-      <ActionSheet
-        ref={actionSheetRef}
-        title={'Select an option'}
-        options={['Choose from Library', 'Take a Photo', 'Delete Photo', 'Cancel']}
-        cancelButtonIndex={3}
-        onPress={handleActionSheet}
-      />
-
-      <ActionSheet
-        ref={optionActionSheetRef}
-        title={'Account Options'}
-        options={['Delete Account', 'Log Out', 'Cancel']}
-        cancelButtonIndex={2}
-        onPress={handleOptionActionSheet}
-      />
-    </ScrollView>
-  </KeyboardAvoidingView>
-);
+        <ActionSheet
+          ref={actionSheetRef}
+          title={'Select an option'}
+          options={['Choose from Library', 'Take a Photo', 'Delete Photo', 'Cancel']}
+          cancelButtonIndex={3}
+          onPress={handleActionSheet}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 };
 
 const styles = StyleSheet.create({
-container: {
-  flexGrow: 1,
-  padding: 20,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#fff',
-},
-title: {
-  fontSize: 24,
-  fontWeight: 'bold',
-  marginBottom: 20,
-},
-input: {
-  width: '100%',
-  height: 40,
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 5,
-  padding: 10,
-  marginBottom: 20,
-},
-saveButton: {
-  width: '100%',
-  height: 40,
-  backgroundColor: '#007AFF',
-  borderRadius: 5,
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginTop: 20,
-},
-optionButton: {
-  width: '100%',
-  height: 40,
-  backgroundColor: '#FF3B30',
-  borderRadius: 5,
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginTop: 20,
-},
-buttonText: {
-  color: '#fff',
-  fontSize: 16,
-  fontWeight: 'bold',
-},
-imageContainer: {
-  position: 'relative',
-  marginBottom: 20,
-},
-borderContainer: {
-  backgroundColor: '#0066CC',
-  borderRadius: 75,
-  borderWidth: 0.4,
-  borderColor: '#0066CC',
-  overflow: 'hidden',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-userImg: {
-  height: 150,
-  width: 150,
-  borderRadius: 75, // Ensure the image is circular
-},
-blurView: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-blurText: {
-  color: '#fff',
-  fontSize: 15,
-  fontWeight: 'bold',
-},
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 20,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+  },
+  saveButton: {
+    width: '100%',
+    height: 40,
+    backgroundColor: '#007AFF',
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  imageContainer: {
+    position: 'relative',
+    marginBottom: 20,
+  },
+  borderContainer: {
+    backgroundColor: '#0066CC',
+    borderRadius: 75,
+    borderWidth: 0.4,
+    borderColor: '#0066CC',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userImg: {
+    height: 150,
+    width: 150,
+    borderRadius: 75, // Ensure the image is circular
+  },
+  blurView: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blurText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
 });
 
 export default EditProfile;
+

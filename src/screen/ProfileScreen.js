@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, FlatList, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
 import { collection, getDocs, query, where, doc, getDoc, deleteDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
-import PostCard from './fetchPosts/PostCard';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import FollowersModal from './follw/followers';
 import FollowingModal from './follw/following';
 
+const { width } = Dimensions.get('window');
+const imageSize = (width - 6) / 3; // Adjusted for margin between images
+
 const ProfileScreen = ({ route }) => {
   const navigation = useNavigation();
-  const { user, signOutUser, userName, userType, userImgUrl } = useAuth();
+  const { user, userName, userType, userImgUrl } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,11 +32,10 @@ const ProfileScreen = ({ route }) => {
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
-  const [slopeColor, setSlopeColor] = useState('#D0B8A8'); // اللون الافتراضي للمنحدر
+  const [slopeColor, setSlopeColor] = useState('#D0B8A8'); // Default slope color
 
   const isCurrentUser = !route.params || route.params.userId === user.uid;
 
-  // Function to fetch profile data
   const fetchProfileData = useCallback(async () => {
     setLoading(true);
     try {
@@ -48,73 +49,47 @@ const ProfileScreen = ({ route }) => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setProfileImageUrl(userData.userImgUrl || route.params?.userImgUrl || userImgUrl);
-        setProfileUserName(userData.username || route.params?.username || userName);
-        setProfileUserType(userData.userType || userType);
+        setProfileUserName(userData.name || route.params?.username || userName);
+        setProfileUserType(userData.type || userType);
         setPhoneNumber(userData.phone || '');
         setCountry(userData.country || '');
         setCity(userData.city || '');
         setBio(userData.bio || '');
 
-        // Get followers count
         const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
         setFollowersCount(followersSnap.size);
         setFollowersList(followersSnap.docs.map(doc => doc.data()));
 
-        // Get following count
         const followingSnap = await getDocs(collection(db, "following", userId, "userFollowing"));
         setFollowingCount(followingSnap.size);
         setFollowingList(followingSnap.docs.map(doc => doc.data()));
 
-        // Get posts count
         const postsSnap = await getDocs(query(collection(db, "postsDesigner"), where("userId", "==", userId)));
         setPostsCount(postsSnap.size);
 
+        const postsData = postsSnap.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }));
+        setPosts(postsData);
       } else {
         console.error("User not found");
       }
 
-      // Check if the current user is following this profile user
       const followingDoc = await getDoc(doc(db, "following", user.uid, "userFollowing", userId));
       setIsFollowing(followingDoc.exists());
 
-      const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", userId));
-      const querySnapshot = await getDocs(postsQuery);
-      const postsData = [];
-      for (const docSnap of querySnapshot.docs) {
-        const postData = docSnap.data();
-        let userDoc = await getDoc(doc(db, "userDesigner", postData.userId));
-        let userImgUrl = null;
-        if (userDoc.exists()) {
-          userImgUrl = userDoc.data().userImgUrl;
-        } else {
-          userDoc = await getDoc(doc(db, "userClient", postData.userId));
-          if (userDoc.exists()) {
-            userImgUrl = userDoc.data().userImgUrl;
-          }
-        }
-        postsData.push({ id: docSnap.id, ...postData, userImgUrl });
-      }
-      setPosts(postsData);
     } catch (error) {
       console.error('Error fetching posts: ', error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // End refresh animation
+      setRefreshing(false);
     }
   }, [user, route.params]);
 
   useEffect(() => {
     fetchProfileData();
   }, [fetchProfileData]);
-
-  const handleLogout = async () => {
-    try {
-      await signOutUser();
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error('Error signing out: ', error);
-    }
-  };
 
   const handleSendMessage = () => {
     if (route.params) {
@@ -128,11 +103,9 @@ const ProfileScreen = ({ route }) => {
     const userId = route.params.userId;
 
     if (isFollowing) {
-      // Unfollow user
       await deleteDoc(doc(db, "following", user.uid, "userFollowing", userId));
       await deleteDoc(doc(db, "followers", userId, "userFollowers", user.uid));
       setIsFollowing(false);
-      // Update followers count
       await updateDoc(doc(db, "userDesigner", userId), {
         followersCount: increment(-1),
       });
@@ -140,7 +113,6 @@ const ProfileScreen = ({ route }) => {
         followersCount: increment(-1),
       });
     } else {
-      // Follow user
       await setDoc(doc(db, "following", user.uid, "userFollowing", userId), {
         userId: userId,
         userName: profileUserName,
@@ -152,7 +124,6 @@ const ProfileScreen = ({ route }) => {
         userImgUrl: userImgUrl
       });
       setIsFollowing(true);
-      // Update followers count
       await updateDoc(doc(db, "userDesigner", userId), {
         followersCount: increment(1),
       });
@@ -176,134 +147,168 @@ const ProfileScreen = ({ route }) => {
   };
 
   const changeSlopeColor = () => {
-    // Change the slope color to a random color or a specific color
-    setSlopeColor(slopeColor === '#D0B8A8' ? '#B6C7AA' : '#D0B8A8'); // مثال لتبديل بين لونين
+    setSlopeColor(slopeColor === '#D0B8A8' ? '#B6C7AA' : '#D0B8A8');
   };
 
+  const renderPost = ({ item }) => (
+    <View style={styles.postImageContainer}>
+      <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
+    </View>
+  );
+
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollViewContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      }
-    >
-      <View style={styles.profileContainer}>
-        <View style={[styles.slope, { backgroundColor: slopeColor }]}>
-          <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
-            <Icon name="paint-brush" size={20} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.profileImageContainer}>
-            <Image
-              style={styles.profileImage}
-              source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
+    <View style={styles.container}>
+      <View style={styles.fixedHeader}>
+        <ScrollView
+          contentContainerStyle={styles.scrollViewContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
             />
-            <Text style={styles.userName}>{profileUserName}</Text>
-          </View>
-        </View>
+          }
+          style={styles.scrollView}
+        >
+          <View style={styles.profileHeader}>
+            <View style={[styles.slope, { backgroundColor: slopeColor }]}>
+              <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
+                <Icon name="paint-brush" size={20} color="#fff" />
+              </TouchableOpacity>
+              <View style={styles.profileImageContainer}>
+                <Image
+                  style={styles.profileImage}
+                  source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
+                />
+                <Text style={styles.userName}>{profileUserName}</Text>
+              </View>
+            </View>
 
-        {!isCurrentUser && (
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="chevron-left" size={25} color="#000" />
-          </TouchableOpacity>
-        )}
+            {!isCurrentUser && (
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <Icon name="chevron-left" size={25} color="#000" />
+              </TouchableOpacity>
+            )}
 
-        <View style={styles.profileContent}>
-        <View style={styles.userInfoContainer}>
-            {profileUserType && (
-              <View style={styles.userTypeContainer}>
-                <Text style={styles.userType}>{profileUserType}</Text>
-                {isCurrentUser && (
-                  <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
-                    <Icon name="edit" size={20} color="#000" />
+            <View style={styles.profileContent}>
+              <View style={styles.userInfoContainer}>
+                {profileUserType && (
+                  <View style={styles.userTypeContainer}>
+                    <Text style={styles.userType}>{profileUserType}</Text>
+                    {isCurrentUser && (
+                      <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
+                        <Icon name="edit" size={20} color="#000" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                <View style={styles.locationContainer}>
+                  {city && (
+                    <View style={styles.locationItem}>
+                      <Icon name="map-marker" size={16} color="#E64A19" />
+                      <Text style={styles.locationText}> {city}</Text>
+                      {country && (
+                        <Text style={styles.locationSeparator}>|</Text>
+                      )}
+                    </View>
+                  )}
+                  {country && (
+                    <View style={styles.locationItem}>
+                      <Icon name="globe" size={16} color="#4CAF50" />
+                      <Text style={styles.locationText}> {country}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.infoContainer}>
+                  {phoneNumber && (
+                    <View style={styles.infoItem}>
+                      <Icon name="phone" size={16} color="#2196F3" />
+                      <Text style={styles.infoText}>Phone: {phoneNumber}</Text>
+                    </View>
+                  )}
+                  {bio && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.bioText}>{bio}</Text>
+                    </View>
+                  )}
+                </View>
+                {!isCurrentUser && (
+                  <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
+                    <Icon name="envelope" size={25} color="#fff" />
+                  </TouchableOpacity>
+                )}
+                {!isCurrentUser && (
+                  <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
+                    <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
                   </TouchableOpacity>
                 )}
               </View>
-            )}
-            <View style={styles.locationContainer}>
-              {city && <Text style={styles.locationText}>{city}</Text>}
-              {country && (
-                <>
-                  <Text style={styles.locationSeparator}>|</Text>
-                  <Text style={styles.locationText}>{country}</Text>
-                </>
-              )}
             </View>
-            {phoneNumber && <Text style={styles.userInfoText}>Phone: {phoneNumber}</Text>}
-            {bio && <Text style={styles.bioText}>Bio: {bio}</Text>}
-            {!isCurrentUser && (
-              <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
-                <Icon name="envelope" size={25} color="#fff" />
-              </TouchableOpacity>
-            )}
-            {!isCurrentUser && (
-              <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
-                <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
 
-          <View style={styles.userActionsContainer}>
-            {isCurrentUser && (
-              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Icon name="sign-out" size={25} color="#000" />
+            <View style={styles.statsContainer}>
+              <TouchableOpacity onPress={toggleFollowersModal}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{followersCount}</Text>
+                  <Text style={styles.statLabel}>Followers</Text>
+                </View>
               </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <TouchableOpacity onPress={toggleFollowersModal}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{followersCount}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
+              <TouchableOpacity onPress={toggleFollowingModal}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{followingCount}</Text>
+                  <Text style={styles.statLabel}> Following</Text>
+                </View>
+              </TouchableOpacity>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{postsCount}</Text>
+                <Text style={styles.statLabel}>Posts</Text>
+              </View>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleFollowingModal}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{followingCount}</Text>
-              <Text style={styles.statLabel}>Following</Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{postsCount}</Text>
-            <Text style={styles.statLabel}>Posts</Text>
           </View>
-        </View>
+        </ScrollView>
+      </View>
 
-        <View style={styles.postsContainer}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#ff0066" />
-          ) : (
-            posts.map((post) => <PostCard key={post.id} post={post} />)
-          )}
-        </View>
-
-        <FollowersModal 
-          modalVisible={followersModalVisible} 
-          toggleFollowersModal={toggleFollowersModal} 
-          followersList={followersList} 
-        />
-        <FollowingModal 
-          modalVisible={followingModalVisible} 
-          toggleFollowingModal={toggleFollowingModal} 
-          followingList={followingList} 
+      <View style={styles.scrollableContent}>
+        <FlatList
+          data={posts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id}
+          numColumns={3}
+          columnWrapperStyle={styles.columnWrapper}
+          style={styles.postsContainer}
         />
       </View>
-    </ScrollView>
+
+      <FollowersModal 
+        modalVisible={followersModalVisible} 
+        toggleFollowersModal={toggleFollowersModal} 
+        followersList={followersList} 
+      />
+      <FollowingModal 
+        modalVisible={followingModalVisible} 
+        toggleFollowingModal={toggleFollowingModal} 
+        followingList={followingList} 
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  fixedHeader: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollView: {
+    flex: 1,
+  },
   scrollViewContainer: {
     flexGrow: 1,
   },
-  profileContainer: {
-    paddingHorizontal: 5,
-    paddingVertical: 0,
+  profileHeader: {
     backgroundColor: '#fff',
+    paddingBottom: 20,
   },
   slope: {
     height: 140,
@@ -332,7 +337,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 1,
     borderColor: '#fff',
-    marginBottom: 1,
+    marginBottom: 10,
   },
   userName: {
     fontSize: 19,
@@ -344,49 +349,61 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   profileContent: {
-    marginTop: 6,
+    marginTop: 0,
+    alignItems: 'flex-start',
+    paddingHorizontal: 18,
   },
   userInfoContainer: {
-    paddingHorizontal: 10,
-    marginBottom:0,
+    alignItems: 'flex-start',
+    paddingHorizontal: 0,
+    marginBottom: 0,
   },
   userTypeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   userType: {
     fontSize: 18,
     color: '#666',
   },
   editButton: {
-    right:260,
-    paddingHorizontal: 0,
+    padding: 5,
+    marginLeft: 1,
   },
   locationContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
   },
-  locationText: {
-    fontSize: 16,
-    color: '#444',
+  locationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 1,
   },
   locationSeparator: {
     fontSize: 16,
     color: '#444',
     marginHorizontal: 5,
   },
-  userInfoText: {
+  locationText: {
     fontSize: 16,
     color: '#444',
-    marginTop: 5,
+  },
+  infoContainer: {
+    marginTop: 1,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#444',
+    marginLeft: 5,
   },
   bioText: {
     fontSize: 16,
     color: '#444',
-    marginTop: 10,
-    marginBottom: 15,
+    marginTop: 0,
   },
   messageButton: {
     marginTop: 10,
@@ -411,7 +428,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: 20,
+    bottom: 0,
   },
   statItem: {
     alignItems: 'center',
@@ -424,11 +441,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  scrollableContent: {
+    flex: 1,
+  },
   postsContainer: {
+    flex: 1,
     paddingHorizontal: 10,
+    paddingBottom: 20,
+  },
+  postImageContainer: {
+    flex: 1,
+    margin: 1, // Adjust margin for spacing between images
+  },
+  postImage: {
+    width: imageSize,
+    height: imageSize,
+    borderRadius: 5,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
 });
 
 export default ProfileScreen;
 
-         
