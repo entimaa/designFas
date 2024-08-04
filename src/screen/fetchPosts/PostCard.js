@@ -209,7 +209,7 @@ const PostCard = ({ post, onPostDelete }) => {
         <View style={styles.userInfo}>
           <Image
             style={styles.userImg}
-            source={post.userImgUrl ? { uri: post.userImgUrl } : require('../../pic/avtar.png')}
+            source={post.userimg ? { uri: post.userimg } : require('../../pic/avtar.png')}
             resizeMode="cover"
             onError={(error) => console.log('Image Load Error:', error)}
           />
@@ -340,10 +340,13 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 200,
+    height: 500,
     borderRadius: 8,
     marginVertical: 10,
+    resizeMode: 'cover', // أو 'contain' حسب ما تفضل
   },
+  
+  
   postContent: {
     fontSize: 16,
     marginBottom: 10,

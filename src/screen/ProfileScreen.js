@@ -150,27 +150,27 @@ const ProfileScreen = ({ route }) => {
     setSlopeColor(slopeColor === '#D0B8A8' ? '#B6C7AA' : '#D0B8A8');
   };
 
-  const renderPost = ({ item }) => (
+  // إضافة دالة جديدة في ProfileScreen
+const handlePostPress = (postId) => {
+  navigation.navigate('PostDetailsScreen', { postId });
+};
+
+// تحديث renderPost لتضمين onPress
+const renderPost = ({ item }) => (
+  <TouchableOpacity onPress={() => handlePostPress(item.id)}>
     <View style={styles.postImageContainer}>
       <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
     </View>
-  );
+  </TouchableOpacity>
+);
+
 
   return (
     <View style={styles.container}>
       <View style={styles.fixedHeader}>
-        <ScrollView
-          contentContainerStyle={styles.scrollViewContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-            />
-          }
-          style={styles.scrollView}
-        >
+      
           <View style={styles.profileHeader}>
-            <View style={[styles.slope, { backgroundColor: slopeColor }]}>
+            <View style={[styles.topFrame, { backgroundColor: slopeColor }]}>
               <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
                 <Icon name="paint-brush" size={20} color="#fff" />
               </TouchableOpacity>
@@ -182,12 +182,14 @@ const ProfileScreen = ({ route }) => {
                 <Text style={styles.userName}>{profileUserName}</Text>
               </View>
             </View>
-
+            
+            {/*
             {!isCurrentUser && (
               <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Icon name="chevron-left" size={25} color="#000" />
               </TouchableOpacity>
             )}
+       * */   }
 
             <View style={styles.profileContent}>
               <View style={styles.userInfoContainer}>
@@ -211,255 +213,282 @@ const ProfileScreen = ({ route }) => {
                       )}
                     </View>
                   )}
+                  
+                  
                   {country && (
                     <View style={styles.locationItem}>
                       <Icon name="globe" size={16} color="#4CAF50" />
                       <Text style={styles.locationText}> {country}</Text>
                     </View>
                   )}
+                  
                 </View>
-                <View style={styles.infoContainer}>
-                  {phoneNumber && (
+                {phoneNumber && (
                     <View style={styles.infoItem}>
                       <Icon name="phone" size={16} color="#2196F3" />
                       <Text style={styles.infoText}>Phone: {phoneNumber}</Text>
                     </View>
                   )}
-                  {bio && (
-                    <View style={styles.infoItem}>
-                      <Text style={styles.bioText}>{bio}</Text>
+                {bio ? (
+                  <Text style={styles.bio}>{bio}</Text>
+                ) : null}
+                <View style={styles.userStatsContainer}>
+                  <TouchableOpacity onPress={toggleFollowersModal} style={styles.statItem}>
+                    <Text style={styles.statCount}>{followersCount}</Text>
+                    <Text style={styles.statLabel}> Followers</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.lineContainer}>
+                     <View style={styles.line} />
                     </View>
-                  )}
+
+                  <TouchableOpacity onPress={toggleFollowingModal} style={styles.statItem}>
+                    <Text style={styles.statCount}>{followingCount}</Text>
+                    <Text style={styles.statLabel}>Following</Text>
+                  </TouchableOpacity>
+                  <View style={styles.lineContainer}>
+                    <View style={styles.line} />
+                  </View>
+
+                  <View style={styles.statItem}>
+                    <Text style={styles.statCount}>{postsCount}</Text>
+                    <Text style={styles.statLabel}>Posts</Text>
+                  </View>
                 </View>
-                {!isCurrentUser && (
+
+                
+              </View>
+
+              {!isCurrentUser && (
+                <View style={styles.actionButtonsContainer}>
                   <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
-                    <Icon name="envelope" size={25} color="#fff" />
+                    <Text style={styles.messageButtonText}>Message</Text>
                   </TouchableOpacity>
-                )}
-                {!isCurrentUser && (
-                  <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
-                    <Text style={styles.followButtonText}>{isFollowing ? "Unfollow" : "Follow"}</Text>
+                  <TouchableOpacity
+                    style={[styles.followButton, isFollowing ? styles.following : styles.notFollowing]}
+                    onPress={handleFollow}
+                  >
+                    <Text style={styles.followButtonText}>
+                      {isFollowing ? 'Unfollow' : 'Follow'}
+                    </Text>
                   </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.statsContainer}>
-              <TouchableOpacity onPress={toggleFollowersModal}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{followersCount}</Text>
-                  <Text style={styles.statLabel}>Followers</Text>
                 </View>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={toggleFollowingModal}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{followingCount}</Text>
-                  <Text style={styles.statLabel}> Following</Text>
-                </View>
-              </TouchableOpacity>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{postsCount}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
-              </View>
+              )}
             </View>
+            
           </View>
+            <ScrollView
+          contentContainerStyle={styles.scrollViewContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
+          style={styles.scrollView}
+        >
+
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            numColumns={3}
+            contentContainerStyle={styles.postsContainer}
+          />
         </ScrollView>
+        
       </View>
 
-      <View style={styles.scrollableContent}>
-        <FlatList
-          data={posts}
-          renderItem={renderPost}
-          keyExtractor={(item) => item.id}
-          numColumns={3}
-          columnWrapperStyle={styles.columnWrapper}
-          style={styles.postsContainer}
-        />
-      </View>
-
-      <FollowersModal 
-        modalVisible={followersModalVisible} 
-        toggleFollowersModal={toggleFollowersModal} 
-        followersList={followersList} 
-      />
-      <FollowingModal 
-        modalVisible={followingModalVisible} 
-        toggleFollowingModal={toggleFollowingModal} 
-        followingList={followingList} 
-      />
+    
     </View>
+    /******************** */
+    /**  <FollowersModal
+        visible={followersModalVisible}
+        onClose={toggleFollowersModal}
+        followersList={followersList}
+      />
+      <FollowingModal
+        visible={followingModalVisible}
+        onClose={toggleFollowingModal}
+        followingList={followingList}
+      /> */
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    
   },
   fixedHeader: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  scrollViewContainer: {
+    paddingBottom: 100,
   },
   scrollView: {
     flex: 1,
   },
-  scrollViewContainer: {
-    flexGrow: 1,
-  },
   profileHeader: {
-    backgroundColor: '#fff',
-    paddingBottom: 20,
-  },
-  slope: {
-    height: 140,
-    borderBottomLeftRadius: 160,
-    borderBottomRightRadius: 10,
-    overflow: 'hidden',
     alignItems: 'center',
+    backgroundColor: '#f4f4f4',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  topFrame: {//topFrame
+    width: '100%',
+    height: 130,
     justifyContent: 'center',
-    position: 'relative',
+    alignItems: 'center',
+    borderBottomLeftRadius: 160,
+    borderBottomRightRadius: 160,
   },
   changeColorButton: {
     position: 'absolute',
     top: 10,
     right: 10,
     padding: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
   },
   profileImageContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 15,
   },
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 60,
-    borderWidth: 1,
+    borderRadius: 50,
+    borderWidth: 2,
     borderColor: '#fff',
-    marginBottom: 10,
   },
   userName: {
-    fontSize: 19,
+    marginBottom: 13,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
+    color: '#333',
   },
   backButton: {
-    padding: 10,
+    position: 'absolute',
+    top: 40,
+    left: 10,
   },
   profileContent: {
-    marginTop: 0,
-    alignItems: 'flex-start',
-    paddingHorizontal: 18,
+    padding: 20,
+    alignItems: 'center',
   },
   userInfoContainer: {
-    alignItems: 'flex-start',
-    paddingHorizontal: 0,
-    marginBottom: 0,
+    alignItems: 'center',
   },
   userTypeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   userType: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: 16,
+    color: '#888',
   },
   editButton: {
-    padding: 5,
-    marginLeft: 1,
+    marginLeft: 10,
   },
   locationContainer: {
     flexDirection: 'row',
+    marginVertical: 10,
   },
   locationItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 1,
-  },
-  locationSeparator: {
-    fontSize: 16,
-    color: '#444',
     marginHorizontal: 5,
   },
   locationText: {
-    fontSize: 16,
-    color: '#444',
+    fontSize: 14,
+    color: '#555',
   },
-  infoContainer: {
-    marginTop: 1,
+  locationSeparator: {
+    marginHorizontal: 5,
+    color: '#555',
+  },
+  userStatsContainer: {
+    flexDirection: 'row',
+    marginTop: 13,
+  },
+  statItem: {
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  statCount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  bio: {
+    marginTop: 0,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
   },
+  
   infoText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#444',
     marginLeft: 5,
   },
-  bioText: {
-    fontSize: 16,
-    color: '#444',
-    marginTop: 0,
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
   },
   messageButton: {
-    marginTop: 10,
-    backgroundColor: '#2e64e5',
+    backgroundColor: '#0084ff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    alignItems: 'center',
+    marginRight: 10,
+  },
+  messageButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
   followButton: {
-    marginTop: 10,
-    backgroundColor: '#2e64e5',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    alignItems: 'center',
   },
   followButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    bottom: 0,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  statLabel: {
     fontSize: 16,
-    color: '#666',
   },
-  scrollableContent: {
-    flex: 1,
+  following: {
+    backgroundColor: '#ddd',
+  },
+  notFollowing: {
+    backgroundColor: '#00c853',
   },
   postsContainer: {
-    flex: 1,
-    paddingHorizontal: 10,
-    paddingBottom: 20,
+    marginTop: 10,
+  },
+  lineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  line: {
+    borderLeftWidth: 2, // سمك الخط
+    borderColor: '#888', // لون الخط
+    height: 34, // طول الخط
+    marginHorizontal: 2, // المسافة الجانبية حول الخط
   },
   postImageContainer: {
-    flex: 1,
-    margin: 1, // Adjust margin for spacing between images
-  },
-  postImage: {
+    margin: 1,
     width: imageSize,
     height: imageSize,
-    borderRadius: 5,
   },
-  columnWrapper: {
-    justifyContent: 'space-between',
+  postImage: {
+    width: '100%',
+    height: '100%',
   },
 });
 

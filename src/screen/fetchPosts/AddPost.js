@@ -25,7 +25,7 @@ const AddPostComponent = ({ toggleModal }) => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [3,4],
       quality: 1,
     });
     if (!result.cancelled) {
@@ -37,7 +37,7 @@ const AddPostComponent = ({ toggleModal }) => {
     let result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [4,4],
       quality: 1,
     });
     if (!result.cancelled) {
@@ -100,7 +100,7 @@ const AddPostComponent = ({ toggleModal }) => {
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 comments: [],
-                userImgUrl: userImgUrl,
+                userimg: userImgUrl,
                 category: category
               });
 

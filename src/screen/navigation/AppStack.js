@@ -173,10 +173,23 @@ const HomeTabs = () => {
 
 const MainStack = () => {
   const navigation = useNavigation();
+
   return (
     <Stack.Navigator>
       <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="UserProfile" 
+        component={ProfileScreen} 
+        options={({ route }) => ({
+          title: route.params ? route.params.username : 'Profile', // عرض اسم المستخدم أو 'Profile'
+          /* */
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })} 
+      />
       <Stack.Screen 
         name="ChatList" 
         component={ChatList} 
@@ -213,7 +226,7 @@ const MainStack = () => {
         }} 
       />
       <Stack.Screen 
-        name="PostDetail" 
+        name="PostDetailsScreen" 
         component={PostDetailScreen} 
         options={{
           title: 'Post Detail',
@@ -227,6 +240,7 @@ const MainStack = () => {
     </Stack.Navigator>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
