@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
@@ -216,158 +216,171 @@ const PostDetailsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.userInfo}>
-          <Image
-            style={styles.userImg}
-            source={post.userimg ? { uri: post.userimg } : require('../../pic/avtar.png')}
-            resizeMode="cover"
-            onError={(error) => console.log('Image Load Error:', error)}
-          />
-          <View style={styles.userText}>
-            <TouchableOpacity onPress={navigateToUserProfile}>
-              <Text style={styles.userName}>{post.username}</Text>
-              <Text style={styles.userName}>{post.category}</Text>
-            </TouchableOpacity>
-            <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.postTitle}>{post.title}</Text>
-        {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
-        <Text style={styles.postContent}>{post.content}</Text>
-        <View style={styles.separator}></View>
-        <View style={styles.iconContainer}>
-          <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
-            <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
-            <Text style={styles.iconText}>{likesCount} likes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={toggleCommentColor} style={styles.iconButton}>
-            <Icon name={showComments ? 'comment' : 'comment-o'} size={20} color={commentColor} />
-            <Text style={styles.iconText}>{comments.length} comments</Text>
-          </TouchableOpacity>
-          
-          {user.uid === post.userId && (
-            <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
-              <Icon name="trash" size={20} color="#000" />
-              <Text style={styles.iconText}>Delete</Text>
-            </TouchableOpacity>
-          )}
-
-          {user.uid !== post.userId && (
-            <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
-              <Icon name="flag" size={20} color={reportedByUser ? 'red' : '#000'} />
-              <Text style={styles.iconText}>{reportCount} reports</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {showComments && (
-          <View style={styles.commentsSection}>
-            <FlatList
-              data={comments}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.comment}>
-                  <Image
-                    style={styles.commentUserImg}
-                    source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.commentTextContainer}>
-                    <Text style={styles.commentUserName}>{item.username}</Text>
-                    <Text style={styles.commentText}>{item.comment}</Text>
-                    <Text style={styles.commentTimestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
-                  </View>
-                  {item.userId === user.uid && (
-                    <TouchableOpacity onPress={() => confirmDeleteComment(item.id, item.userId)} style={styles.commentDeleteButton}>
-                      <Icon name="trash" size={15} color="#000" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.card}>
+          <View style={styles.userInfo}>
+            <Image
+              style={styles.userImg}
+              source={post.userimg ? { uri: post.userimg } : require('../../pic/avtar.png')}
+              resizeMode="cover"
+              onError={(error) => console.log('Image Load Error:', error)}
             />
-            <View style={styles.addCommentSection}>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Add a comment..."
-                value={newComment}
-                onChangeText={setNewComment}
-              />
-              <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
-                <Icon name="send" size={20} color="#000" />
+            <View style={styles.userText}>
+              <TouchableOpacity onPress={navigateToUserProfile}>
+                <Text style={styles.userName}>{post.username}</Text>
+                <Text style={styles.userName}>{post.category}</Text>
               </TouchableOpacity>
+              <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
             </View>
           </View>
+
+          <Text style={styles.postTitle}>{post.title}</Text>
+          {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
+          <Text style={styles.postContent}>{post.content}</Text>
+          <View style={styles.separator}></View>
+
+          <View style={styles.iconContainer}>
+            <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
+              <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
+              <Text style={styles.iconText}>{likesCount} likes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={toggleCommentColor} style={styles.iconButton}>
+              <Icon name={showComments ? 'comment' : 'comment-o'} size={20} color={commentColor} />
+              <Text style={styles.iconText}>{comments.length} comments</Text>
+            </TouchableOpacity>
+
+            {user.uid === post.userId && (
+              <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
+                <Icon name="trash" size={20} color="#000" />
+                <Text style={styles.iconText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+
+            {user.uid !== post.userId && (
+              <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
+                <Image source={require('../../pic/iconsPost/REPORT.png')}
+                style={styles.reportIcon}
+                />
+                
+              {// <Text style={styles.iconText}>{reportCount} reports</Text>
+              } 
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {showComments && (
+  <View style={styles.commentsWrapper}>
+    <ScrollView style={styles.commentsContainer}>
+      <FlatList
+        data={comments} // Display all comments
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
+            <View style={styles.commentContainer}>
+              <Image
+                style={styles.commentUserImg}
+                source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
+                resizeMode="cover"
+              />
+              <View style={styles.commentTextContainer}>
+                <Text style={styles.commentUsername}>{item.username}</Text>
+                <Text style={styles.commentText}>{item.comment}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         )}
-      </View>
+      />
+    </ScrollView>
+    <View style={styles.commentInputContainer}>
+      <TextInput
+        style={styles.commentInput}
+        value={newComment}
+        onChangeText={setNewComment}
+        placeholder="Add a comment..."
+      />
+      <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
+        <Icon name="paper-plane" size={20} color="#8D493A" />
+      </TouchableOpacity>
     </View>
+  </View>
+)}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: '#D0B8A8',
     flex: 1,
-    backgroundColor: '#fff',
     padding: 10,
   },
+  scrollContainer: {
+    flexGrow: 1,
+  },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F8EDE3',
     borderRadius: 8,
     padding: 10,
     marginVertical: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 1,
   },
   userImg: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
   userText: {
-    marginLeft: 10,
+    flex: 1,
   },
   userName: {
-    fontSize: 16,
     fontWeight: 'bold',
+    fontSize: 16,
   },
   postTime: {
+    color: '#888',
     fontSize: 12,
-    color: '#666',
   },
   postTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 5,
+    fontSize: 18,
+    marginBottom: 5,
   },
   postImage: {
     width: '100%',
-    height: 200,
+    height: 400,
     borderRadius: 8,
     marginVertical: 10,
+    resizeMode: 'cover',
   },
   postContent: {
     fontSize: 16,
-    marginVertical: 5,
+    marginTop: -19,
   },
   separator: {
     height: 1,
-    backgroundColor: '#e1e1e1',
-    marginVertical: 10,
+    backgroundColor: '#D0B8A8',
+    marginVertical: 4,
   },
   iconContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
   iconButton: {
     flexDirection: 'row',
@@ -375,54 +388,62 @@ const styles = StyleSheet.create({
   },
   iconText: {
     marginLeft: 5,
-    fontSize: 16,
+    fontSize: 14,
   },
-  commentsSection: {
-    marginTop: 10,
+  commentsWrapper: {
+    marginVertical: 3,/* ارتفاع الكارد منالاسفل */
+    paddingBottom :0, // Ensure there's space at the bottom
   },
-  comment: {
+  commentsContainer: {
+    maxHeight: 110, // Fixed height for the comments section
+    borderRadius: 8,
+    backgroundColor: '#F8EDE3',
+    padding: 1,
+  },
+  commentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 5,
+    paddingVertical: 5,
+    borderBottomColor: '#DFD3C3',
+    borderBottomWidth: 1,
   },
   commentUserImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
   },
   commentTextContainer: {
     flex: 1,
-    marginLeft: 10,
   },
-  commentUserName: {
-    fontSize: 14,
+  commentUsername: {
     fontWeight: 'bold',
+    fontSize: 14,
   },
   commentText: {
     fontSize: 14,
   },
-  commentTimestamp: {
-    fontSize: 12,
-    color: '#666',
-  },
-  commentDeleteButton: {
-    marginLeft: 10,
-  },
-  addCommentSection: {
+  commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    paddingTop: 10,
   },
   commentInput: {
     flex: 1,
-    borderColor: '#ccc',
+    borderColor: '#8D493A',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 7,
     padding: 10,
+    marginRight: 10,
   },
   commentButton: {
-    marginLeft: 10,
+    padding: 1,
+    
   },
+  reportIcon:{
+    width:20,
+    height:20,
+  }
 });
 
 export default PostDetailsScreen;
