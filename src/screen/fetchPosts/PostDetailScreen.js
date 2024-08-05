@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
@@ -26,21 +26,14 @@ const PostDetailsScreen = () => {
     const postRef = doc(db, 'postsDesigner', postId);
     const unsubscribe = onSnapshot(postRef, (doc) => {
       const postData = doc.data();
-      setPost(postData);
-      setComments(postData.comments || []);
-      setLikesCount(postData.likesCount || 0);
-      setReportCount(postData.reportCount || 0);
+      if (postData) {
+        setPost(postData);
+        setComments(postData.comments || []);
+        setLikesCount(postData.likesCount || 0);
+        setReportCount(postData.reportCount || 0);
 
-      if (Array.isArray(postData.likes)) {
-        setLikedByUser(postData.likes.includes(user.uid));
-      } else {
-        setLikedByUser(false);
-      }
-
-      if (Array.isArray(postData.reports)) {
-        setReportedByUser(postData.reports.includes(user.uid));
-      } else {
-        setReportedByUser(false);
+        setLikedByUser(Array.isArray(postData.likes) ? postData.likes.includes(user.uid) : false);
+        setReportedByUser(Array.isArray(postData.reports) ? postData.reports.includes(user.uid) : false);
       }
     });
 
@@ -79,25 +72,28 @@ const PostDetailsScreen = () => {
   };
 
   const navigateToUserProfile = () => {
-    navigation.navigate('UserProfile', { 
-      userId: post.userId, 
-      username: post.username, 
-      userImgUrl: post.userImgUrl 
-    });
+    if (post) {
+      navigation.navigate('UserProfile', { 
+        userId: post.userId, 
+        username: post.username, 
+        userImgUrl: post.userImgUrl 
+      });
+    }
   };
 
   const handleDeletePost = async () => {
     try {
       const postRef = doc(db, 'postsDesigner', postId);
       await deleteDoc(postRef);
+  
       Alert.alert('Success', 'Post deleted successfully!');
-      navigation.goBack();
+      navigation.navigate('ProfileScreen', { refresh: true }); // Pass a parameter to indicate a refresh
     } catch (error) {
       console.error('Error deleting post:', error);
       Alert.alert('Error', 'Failed to delete post.');
     }
   };
-
+  
   const confirmDelete = () => {
     Alert.alert(
       'Delete Post',
@@ -119,7 +115,7 @@ const PostDetailsScreen = () => {
       id: new Date().toISOString(),
       userId: user.uid,
       username: userName || 'USER',
-      userImgUrl: userImgUrl || '../../pic/avtar.png',
+      userImgUrl: userImgUrl || require('../../pic/avtar.png'),
       comment: newComment,
       timestamp: new Date().toISOString(),
     };
@@ -139,17 +135,19 @@ const PostDetailsScreen = () => {
   };
 
   const handleDeleteComment = async (commentId) => {
-    try {
-      const postRef = doc(db, 'postsDesigner', postId);
-      const updatedComments = comments.filter(comment => comment.id !== commentId);
-      await updateDoc(postRef, {
-        comments: updatedComments,
-      });
-      setComments(updatedComments); // Update local state
-      Alert.alert('Success', 'Comment deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      Alert.alert('Error', 'Failed to delete comment.');
+    if (comments && comments.length > 0) {
+      try {
+        const postRef = doc(db, 'postsDesigner', postId);
+        const updatedComments = comments.filter(comment => comment.id !== commentId);
+        await updateDoc(postRef, {
+          comments: updatedComments,
+        });
+        setComments(updatedComments); // Update local state
+        Alert.alert('Success', 'Comment deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+        Alert.alert('Error', 'Failed to delete comment.');
+      }
     }
   };
 
@@ -169,33 +167,35 @@ const PostDetailsScreen = () => {
   };
 
   const handleReportPost = async () => {
-    const postRef = doc(db, 'postsDesigner', postId);
-    try {
-      if (reportedByUser) {
-        Alert.alert('Already Reported', 'You have already reported this post.');
-        return;
-      }
+    if (post) {
+      const postRef = doc(db, 'postsDesigner', postId);
+      try {
+        if (reportedByUser) {
+          Alert.alert('Already Reported', 'You have already reported this post.');
+          return;
+        }
 
-      await updateDoc(postRef, {
-        reports: arrayUnion(user.uid),
-        reportCount: reportCount + 1,
-      });
+        await updateDoc(postRef, {
+          reports: arrayUnion(user.uid),
+          reportCount: reportCount + 1,
+        });
 
-      if (reportCount + 1 >= 4) {
-        await deleteDoc(postRef);
-        Alert.alert('Post Deleted', 'This post has been deleted due to multiple reports.');
-        navigation.goBack();
-      } else {
-        Alert.alert('Reported', 'Thank you for reporting. The post will be reviewed.');
+        if (reportCount + 1 >= 4) {
+          await deleteDoc(postRef);
+          Alert.alert('Post Deleted', 'This post has been deleted due to multiple reports.');
+          navigation.goBack();
+        } else {
+          Alert.alert('Reported', 'Thank you for reporting. The post will be reviewed.');
+        }
+      } catch (error) {
+        console.error('Error reporting post:', error);
+        Alert.alert('Error', 'Failed to report post.');
       }
-    } catch (error) {
-      console.error('Error reporting post:', error);
-      Alert.alert('Error', 'Failed to report post.');
     }
   };
 
   const confirmReport = () => {
-    if (user.uid !== post.userId) { // Only show report button if the user is not the post owner
+    if (user.uid !== post?.userId) { // Only show report button if the user is not the post owner
       Alert.alert(
         'Report Post',
         'Are you sure you want to report this post?',
@@ -220,97 +220,88 @@ const PostDetailsScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.card}>
-          <View style={styles.userInfo}>
-            <Image
-              style={styles.userImg}
-              source={post.userimg ? { uri: post.userimg } : require('../../pic/avtar.png')}
-              resizeMode="cover"
-              onError={(error) => console.log('Image Load Error:', error)}
-            />
-            <View style={styles.userText}>
-              <TouchableOpacity onPress={navigateToUserProfile}>
-                <Text style={styles.userName}>{post.username}</Text>
-                <Text style={styles.userName}>{post.category}</Text>
-              </TouchableOpacity>
-              <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.postTitle}>{post.title}</Text>
-          {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
-          <Text style={styles.postContent}>{post.content}</Text>
-          <View style={styles.separator}></View>
-
-          <View style={styles.iconContainer}>
-            <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
-              <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
-              <Text style={styles.iconText}>{likesCount} likes</Text>
+      <View style={styles.card}>
+        <View style={styles.userInfo}>
+          <Image
+            style={styles.userImg}
+            source={post.userImg ? { uri: post.userImg } : require('../../pic/avtar.png')}
+            resizeMode="cover"
+            onError={(error) => console.log('Image Load Error:', error)}
+          />
+          <View style={styles.userText}>
+            <TouchableOpacity onPress={navigateToUserProfile}>
+              <Text style={styles.userName}>{post.username}</Text>
+              <Text style={styles.userName}>{post.category}</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={toggleCommentColor} style={styles.iconButton}>
-              <Icon name={showComments ? 'comment' : 'comment-o'} size={20} color={commentColor} />
-              <Text style={styles.iconText}>{comments.length} comments</Text>
-            </TouchableOpacity>
-
-            {user.uid === post.userId && (
-              <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
-                <Icon name="trash" size={20} color="#000" />
-                <Text style={styles.iconText}>Delete</Text>
-              </TouchableOpacity>
-            )}
-
-            {user.uid !== post.userId && (
-              <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
-                <Image source={require('../../pic/iconsPost/REPORT.png')}
-                style={styles.reportIcon}
-                />
-                
-              {// <Text style={styles.iconText}>{reportCount} reports</Text>
-              } 
-              </TouchableOpacity>
-            )}
+            <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
           </View>
-
-          {showComments && (
-  <View style={styles.commentsWrapper}>
-    <ScrollView style={styles.commentsContainer}>
-      <FlatList
-        data={comments} // Display all comments
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
-            <View style={styles.commentContainer}>
-              <Image
-                style={styles.commentUserImg}
-                source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
-                resizeMode="cover"
-              />
-              <View style={styles.commentTextContainer}>
-                <Text style={styles.commentUsername}>{item.username}</Text>
-                <Text style={styles.commentText}>{item.comment}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
-    </ScrollView>
-    <View style={styles.commentInputContainer}>
-      <TextInput
-        style={styles.commentInput}
-        value={newComment}
-        onChangeText={setNewComment}
-        placeholder="Add a comment..."
-      />
-      <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
-        <Icon name="paper-plane" size={20} color="#8D493A" />
-      </TouchableOpacity>
-    </View>
-  </View>
-)}
         </View>
-      </ScrollView>
+
+        <Text style={styles.postTitle}>{post.title}</Text>
+        {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
+        <Text style={styles.postContent}>{post.content}</Text>
+        <View style={styles.separator}></View>
+
+        <View style={styles.iconContainer}>
+        <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
+            <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
+            <Text style={styles.iconText}>{likesCount} likes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={toggleCommentColor} style={styles.iconButton}>
+            <Icon name={showComments ? 'comment' : 'comment-o'} size={20} color={commentColor} />
+            <Text style={styles.iconText}>{comments.length} comments</Text>
+          </TouchableOpacity>
+
+          {user.uid === post.userId && (
+            <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
+              <Icon name="trash" size={20} color="#000" />
+              <Text style={styles.iconText}>Delete</Text>
+            </TouchableOpacity>
+          )}
+
+          {user.uid !== post.userId && (
+            <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
+              <Image source={require('../../pic/iconsPost/REPORT.png')} style={styles.reportIcon} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {showComments && (
+          <View style={styles.commentsWrapper}>
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
+                  <View style={styles.commentContainer}>
+                    <Image
+                      style={styles.commentUserImg}
+                      source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.commentTextContainer}>
+                      <Text style={styles.commentUsername}>{item.username}</Text>
+                      <Text style={styles.commentText}>{item.comment}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                style={styles.commentInput}
+                value={newComment}
+                onChangeText={setNewComment}
+                placeholder="Add a comment..."
+              />
+              <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
+                <Icon name="paper-plane" size={20} color="#8D493A" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -320,9 +311,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#D0B8A8',
     flex: 1,
     padding: 10,
-  },
-  scrollContainer: {
-    flexGrow: 1,
   },
   card: {
     backgroundColor: '#F8EDE3',
@@ -391,14 +379,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   commentsWrapper: {
-    marginVertical: 3,/* ارتفاع الكارد منالاسفل */
-    paddingBottom :0, // Ensure there's space at the bottom
+    marginVertical: 3, /* ارتفاع الكارد من الاسفل */
+    paddingBottom: 0, // Ensure there's space at the bottom
   },
-  commentsContainer: {
-    maxHeight: 110, // Fixed height for the comments section
-    borderRadius: 8,
-    backgroundColor: '#F8EDE3',
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 10,
+  },
+  commentInput: {
+    flex: 1,
+    borderColor: '#8D493A',
+    borderWidth: 1,
+    borderRadius: 7,
+    padding: 10,
+    marginRight: 10,
+  },
+  commentButton: {
     padding: 1,
+  },
+  reportIcon: {
+    width: 20,
+    height: 20,
   },
   commentContainer: {
     flexDirection: 'row',
@@ -423,27 +425,6 @@ const styles = StyleSheet.create({
   commentText: {
     fontSize: 14,
   },
-  commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 10,
-  },
-  commentInput: {
-    flex: 1,
-    borderColor: '#8D493A',
-    borderWidth: 1,
-    borderRadius: 7,
-    padding: 10,
-    marginRight: 10,
-  },
-  commentButton: {
-    padding: 1,
-    
-  },
-  reportIcon:{
-    width:20,
-    height:20,
-  }
 });
 
 export default PostDetailsScreen;
