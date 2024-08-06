@@ -8,9 +8,9 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebas
 import { BlurView } from 'expo-blur';
 import ActionSheet from 'react-native-actionsheet';
 import { signOut, deleteUser } from 'firebase/auth';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // Importing an icon library
+import Icon from 'react-native-vector-icons/MaterialIcons'; 
 
-const defaultAvatarUri = '../pic/avatar.png'; // Path to the default avatar image
+const defaultAvatarUri = '../pic/avtar.png'; 
 
 const EditProfile = () => {
   const { user, userType, userImgUrl, setUserImgUrl, auth } = useAuth();
@@ -84,7 +84,6 @@ const EditProfile = () => {
       const storageRef = ref(storage, userImgUrl);
       await deleteObject(storageRef);
 
-      // Update Firestore to set userImgUrl to null
       const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
       const userDocRef = doc(db, collectionPath, user.uid);
       await setDoc(userDocRef, { userImgUrl: null }, { merge: true });
@@ -137,7 +136,7 @@ const EditProfile = () => {
             imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
             setUploading(false);
             Alert.alert("Upload Success", "Image uploaded successfully!");
-            handleSaveProfile(imageUrl);  // Pass the new image URL to the save profile function
+            handleSaveProfile(imageUrl);  
           }
         );
       } catch (error) {
@@ -146,7 +145,7 @@ const EditProfile = () => {
         Alert.alert("Upload Error", "Failed to upload image. Please try again later.");
       }
     } else {
-      handleSaveProfile(imageUrl);  // Pass the existing image URL to the save profile function
+      handleSaveProfile(imageUrl);  
     }
   };
 
@@ -155,7 +154,7 @@ const EditProfile = () => {
       try {
         const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
         const userDocRef = doc(db, collectionPath, user.uid);
-
+  
         const updatedData = {
           name,
           phone,
@@ -163,25 +162,81 @@ const EditProfile = () => {
           city,
           bio,
         };
-
+  
         if (imageUrl) {
-          updatedData.userImgUrl = imageUrl;  // Add the image URL to the update
-          setUserImgUrl(imageUrl);  // Update the image URL in the auth context
+          updatedData.userImgUrl = imageUrl;
+          setUserImgUrl(imageUrl);
         }
-
+  
+        // Update user data
         await setDoc(userDocRef, updatedData, { merge: true });
-
-        // Update the user name in postsDesigner collection
+  
+        // Update user name and image in postsDesigner collection
         const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", user.uid));
-        const querySnapshot = await getDocs(postsQuery);
-
-        querySnapshot.forEach(async (postDoc) => {
+        const postsSnapshot = await getDocs(postsQuery);
+        for (const postDoc of postsSnapshot.docs) {
           const postRef = doc(db, "postsDesigner", postDoc.id);
+  
+          // Update user name and image in the post itself
           await updateDoc(postRef, {
             username: name,
+            userimg: imageUrl
           });
-        });
-
+  
+          // Update user name and image in comments field of the post
+          const postData = postDoc.data();
+          const updatedComments = postData.comments.map(comment => {
+            if (comment.userId === user.uid) {
+              return { ...comment, username: name, userImgUrl: imageUrl };
+            }
+            return comment;
+          });
+  
+          await updateDoc(postRef, { comments: updatedComments });
+        }
+  
+        // Update user name and image in followers collection
+        const followersQuery = query(collection(db, "followers"), where("userFollowers.userId", "==", user.uid));
+        const followersSnapshot = await getDocs(followersQuery);
+        for (const followerDoc of followersSnapshot.docs) {
+          const followerRef = doc(db, "followers", followerDoc.id);
+          const userFollowers = followerDoc.data().userFollowers || [];
+          const updatedFollowers = userFollowers.map(follower => {
+            if (follower.userId === user.uid) {
+              return { ...follower, userName: name, userImgUrl: imageUrl }; // Changed from 'username' to 'userName'
+            }
+            return follower;
+          });
+          await updateDoc(followerRef, { userFollowers: updatedFollowers });
+        }
+  
+        // Update user name and image in following collection
+        const followingQuery = query(collection(db, "following"), where("userFollowing.userId", "==", user.uid));
+        const followingSnapshot = await getDocs(followingQuery);
+        for (const followingDoc of followingSnapshot.docs) {
+          const followingRef = doc(db, "following", followingDoc.id);
+          const userFollowing = followingDoc.data().userFollowing || [];
+          const updatedFollowing = userFollowing.map(following => {
+            if (following.userId === user.uid) {
+              return { ...following, userName: name, userImgUrl: imageUrl }; // Changed from 'username' to 'userName'
+            }
+            return following;
+          });
+          await updateDoc(followingRef, { userFollowing: updatedFollowing });
+        }
+  
+        // Reload user data
+        const updatedUserDoc = await getDoc(userDocRef);
+        if (updatedUserDoc.exists()) {
+          const updatedUserData = updatedUserDoc.data();
+          setName(updatedUserData.name || '');
+          setPhone(updatedUserData.phone || '');
+          setCountry(updatedUserData.country || '');
+          setCity(updatedUserData.city || '');
+          setBio(updatedUserData.bio || '');
+          setImage(updatedUserData.userImgUrl || defaultAvatarUri);
+        }
+  
         Alert.alert('Profile updated successfully');
       } catch (error) {
         console.error('Error updating profile:', error);
@@ -189,12 +244,12 @@ const EditProfile = () => {
       }
     }
   };
-  /*
-  !hghjgjkg
-  *jhgukhk
-  ?uuhuhu
   
-  */
+  
+  
+  
+  
+  
 
   const handleActionSheet = (index) => {
     if (index === 0) {
@@ -209,18 +264,15 @@ const EditProfile = () => {
   const deleteAccount = async () => {
     if (user) {
       try {
-        // Remove user data from Firestore
         const collectionPath = userType === 'Designer' ? 'userDesigner' : 'userClient';
         const userDocRef = doc(db, collectionPath, user.uid);
         await deleteDoc(userDocRef);
 
-        // Delete the user's profile image from Storage
         if (userImgUrl) {
           const storageRef = ref(storage, userImgUrl);
           await deleteObject(storageRef);
         }
 
-        // Delete the user account
         await deleteUser(auth.currentUser);
 
         Alert.alert('Account Deleted', 'Your account has been deleted successfully.');
@@ -236,15 +288,13 @@ const EditProfile = () => {
       await signOut(auth);
       Alert.alert('Logged Out', 'You have been logged out successfully.');
     } catch (error) {
-      console.error('Log Out Error: ', error);
-      Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+      console.error('Logout Error: ', error);
+      Alert.alert('Logout Error', 'Failed to log out. Please try again later.');
     }
   };
-
   const showActionSheet = () => {
     actionSheetRef.current.show();
   };
-
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView contentContainerStyle={styles.container}>
@@ -407,4 +457,3 @@ const styles = StyleSheet.create({
 });
 
 export default EditProfile;
-
