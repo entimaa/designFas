@@ -1,23 +1,63 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, Image, Button, Platform, Alert } from 'react-native';
 import { collection, orderBy, query, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { GiftedChat, Bubble, Send } from 'react-native-gifted-chat';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { db } from '../../../data/DataFirebase';
+import { db, storage } from '../../../data/DataFirebase'; 
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
+  const [imageUri, setImageUri] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const { user, userImgUrl } = useAuth();
   const navigation = useNavigation();
   const route = useRoute();
   const { userId, username } = route.params;
 
-  // Generate a unique chat ID for the conversation
   const chatId = user?.uid < userId ? `${user?.uid}_${userId}` : `${userId}_${user?.uid}`;
 
-  // Hide tab bar when entering Chat screen
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 1,
+    });
+    if (!result.cancelled) {
+      setImageUri(result.assets[0].uri);
+      setModalVisible(true);
+    }
+  };
+
+  const takeImage = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    });
+    if (!result.cancelled) {
+      setImageUri(result.assets[0].uri);
+      setModalVisible(true);
+    }
+  };
+
+  const handleImagePicker = () => {
+    Alert.alert(
+      "Select Image",
+      "Choose an image source",
+      [
+        { text: "Camera", onPress: takeImage },
+        { text: "Gallery", onPress: pickImage },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
+  };
+
   useLayoutEffect(() => {
     navigation.getParent()?.setOptions({
       tabBarStyle: { display: 'none' },
@@ -30,7 +70,6 @@ const Chat = () => {
     };
   }, [navigation]);
 
-  // Set the header title to the username and handle the back action
   useLayoutEffect(() => {
     navigation.setOptions({
       title: username,
@@ -39,10 +78,15 @@ const Chat = () => {
           <FontAwesome name="chevron-left" size={25} color="#000" />
         </TouchableOpacity>
       ),
+      /*
+      headerRight: () => (
+        <TouchableOpacity onPress={handleImagePicker}>
+          <FontAwesome name="image" size={25} color="#000" />
+        </TouchableOpacity>
+      ),*/
     });
   }, [navigation, username]);
 
-  // Fetch messages from Firestore
   useLayoutEffect(() => {
     const collRef = collection(db, 'chats', chatId, 'messages');
     const q = query(collRef, orderBy('createdAt', 'desc'));
@@ -53,6 +97,7 @@ const Chat = () => {
         createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date(),
         text: doc.data().text,
         user: doc.data().user,
+        image: doc.data().image,
       }));
 
       setMessages(updatedMessages);
@@ -62,16 +107,49 @@ const Chat = () => {
   }, [user?.uid, userId, chatId]);
 
   const onSend = useCallback((messages = []) => {
-    const { _id, text, user: messageUser } = messages[0];
+    const { _id, text, user: messageUser, image } = messages[0];
     const messageData = {
       _id,
       createdAt: serverTimestamp(),
       text,
       user: messageUser,
+      image,
     };
 
     addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
   }, [user?.uid, userId, chatId]);
+
+  const handleUploadImage = async () => {
+    const filename = imageUri.split('/').pop();
+    const uploadUri = Platform.OS === 'ios' ? imageUri.replace('file://', '') : imageUri;
+    const storageRef = ref(storage, `chat-images/${filename}`);
+    const response = await fetch(uploadUri);
+    const blob = await response.blob();
+
+    try {
+      await uploadBytes(storageRef, blob);
+      const imageUrl = await getDownloadURL(storageRef);
+
+      console.log('Image uploaded successfully:', imageUrl);
+
+      const newMessage = {
+        _id: new Date().getTime().toString(),
+        createdAt: new Date(),
+        text: '',
+        user: {
+          _id: user?.uid,
+          avatar: userImgUrl,
+        },
+        image: imageUrl,
+      };
+
+      onSend([newMessage]);
+      setModalVisible(false);
+    } catch (error) {
+      console.log('Error uploading image:', error);
+      Alert.alert('Error', 'Failed to upload image.');
+    }
+  };
 
   const renderBubble = (props) => (
     <Bubble
@@ -84,35 +162,68 @@ const Chat = () => {
         left: { color: 'white' },
         right: { color: 'white' },
       }}
+      renderMessageImage={() => {
+        if (props.currentMessage.image) {
+          return (
+            <Image
+              source={{ uri: props.currentMessage.image }}
+              style={styles.messageImage}
+            />
+          );
+        }
+        return null;
+      }}
     />
   );
 
   const renderSend = (props) => (
-    <Send {...props}>
-      <View style={styles.sendingContainer}>
-        <FontAwesome name="arrow-circle-right" size={25} color="#2e64e5" style={{ marginBottom: 10 }} />
-      </View>
-    </Send>
+    <View style={styles.bottomContainer}>
+      <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
+        <FontAwesome name="camera" size={25} color="#2e64e5" />
+      </TouchableOpacity>
+      <Send {...props}>
+        <View style={styles.sendingContainer}>
+          <FontAwesome name="paper-plane" size={25} color="#2e64e5" style={{ marginBottom: 10 }} />
+        </View>
+      </Send>
+    </View>
   );
+  
 
   const scrollToBottomComponent = () => (
     <FontAwesome name='angle-double-down' size={22} color='#333' />
   );
 
   return (
-    <GiftedChat
-      messages={messages}
-      onSend={(messages) => onSend(messages)}
-      user={{
-        _id: user?.uid,
-        avatar: userImgUrl,
-      }}
-      renderBubble={renderBubble}
-      alwaysShowSend
-      renderSend={renderSend}
-      scrollToBottom
-      scrollToBottomComponent={scrollToBottomComponent}
-    />
+    <View style={{ flex: 1 }}>
+      <GiftedChat
+        messages={messages}
+        onSend={(messages) => onSend(messages)}
+        user={{
+          _id: user?.uid,
+          avatar: userImgUrl,
+        }}
+        renderBubble={renderBubble}
+        alwaysShowSend
+        renderSend={renderSend}
+        scrollToBottom
+        scrollToBottomComponent={scrollToBottomComponent}
+      />
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Image source={{ uri: imageUri }} style={styles.modalImage} />
+          <View style={styles.modalButtonsContainer}>
+            <Button title="Send" onPress={handleUploadImage} color="#2e64e5" />
+            <Button title="Cancel" onPress={() => setModalVisible(false)} color="#f00" />
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -123,6 +234,46 @@ const styles = StyleSheet.create({
     marginRight: 10,
     marginBottom: 5,
   },
+  messageImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+    marginVertical: 5,
+    marginHorizontal: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 15,
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
+  },
+  bottomContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+    marginBottom: 5,
+  },
+  sendingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  imagePicker: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginBottom: 5,
+  },
+
 });
 
 export default Chat;

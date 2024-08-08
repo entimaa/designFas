@@ -182,9 +182,15 @@ const MainStack = () => {
         component={ProfileScreen} 
         options={({ route }) => ({
           title: route.params ? route.params.username : 'Profile', // عرض اسم المستخدم أو 'Profile'
-          /* */
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+            <TouchableOpacity onPress={() => {
+              const { fromChatList } = route.params || {};
+              if (fromChatList) {
+                navigation.navigate('ChatList');
+              } else {
+                navigation.goBack();
+              }
+            }} style={{ marginLeft: 15 }}>
               <Icon name="chevron-left" size={25} color="#000" />
             </TouchableOpacity>
           ),
@@ -240,6 +246,7 @@ const MainStack = () => {
     </Stack.Navigator>
   );
 };
+
 
 
 const styles = StyleSheet.create({

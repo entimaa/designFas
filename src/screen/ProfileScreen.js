@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, FlatList, Dimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
 import { collection, getDocs, query, where, doc, getDoc, deleteDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
@@ -35,57 +35,76 @@ const ProfileScreen = ({ route }) => {
   const [slopeColor, setSlopeColor] = useState('#D0B8A8'); // Default slope color
 
   const isCurrentUser = !route.params || route.params.userId === user.uid;
+/* 
+!if the user logs in a pje profile  , the return will be to the paje from witch he logged in 
+! i use fromChatList for ur..
 
-  const fetchProfileData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const userId = route.params ? route.params.userId : user.uid;
-      let userDoc = await getDoc(doc(db, "userDesigner", userId));
+*/
+const { fromChatList } = route.params || {};
 
-      if (!userDoc.exists()) {
-        userDoc = await getDoc(doc(db, "userClient", userId));
-      }
+const handleGoBack = () => {
+  if (fromChatList) {
+    navigation.navigate('ChatList');
+  } else {
+    navigation.goBack();
+  }
+};
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        setProfileImageUrl(userData.userImgUrl || route.params?.userImgUrl || userImgUrl);
-        setProfileUserName(userData.name || route.params?.username || userName);
-        setProfileUserType(userData.type || userType);
-        setPhoneNumber(userData.phone || '');
-        setCountry(userData.country || '');
-        setCity(userData.city || '');
-        setBio(userData.bio || '');
 
-        const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
-        setFollowersCount(followersSnap.size);
-        setFollowersList(followersSnap.docs.map(doc => doc.data()));
 
-        const followingSnap = await getDocs(collection(db, "following", userId, "userFollowing"));
-        setFollowingCount(followingSnap.size);
-        setFollowingList(followingSnap.docs.map(doc => doc.data()));
 
-        const postsSnap = await getDocs(query(collection(db, "postsDesigner"), where("userId", "==", userId)));
-        setPostsCount(postsSnap.size);
+const fetchProfileData = useCallback(async () => {
+  setLoading(true);
+  try {
+    const userId = route.params ? route.params.userId : user.uid;
+    let userDoc = await getDoc(doc(db, "userDesigner", userId));
 
-        const postsData = postsSnap.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        }));
-        setPosts(postsData);
-      } else {
-        console.error("User not found");
-      }
-
-      const followingDoc = await getDoc(doc(db, "following", user.uid, "userFollowing", userId));
-      setIsFollowing(followingDoc.exists());
-
-    } catch (error) {
-      console.error('Error fetching posts: ', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (!userDoc.exists()) {
+      userDoc = await getDoc(doc(db, "userClient", userId));
     }
-  }, [user, route.params]);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const fetchedProfileImageUrl = userData.userImgUrl || null;// TODO-->  here oif the user dont have pic profile use anothe avtar and not use pic the user in account 
+      setProfileImageUrl(fetchedProfileImageUrl);
+      setProfileUserName(userData.name || route.params?.username || userName);
+      setProfileUserType(userData.type || userType);
+      setPhoneNumber(userData.phone || '');
+      setCountry(userData.country || '');
+      setCity(userData.city || '');
+      setBio(userData.bio || '');
+
+      const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
+      setFollowersCount(followersSnap.size);
+      setFollowersList(followersSnap.docs.map(doc => doc.data()));
+
+      const followingSnap = await getDocs(collection(db, "following", userId, "userFollowing"));
+      setFollowingCount(followingSnap.size);
+      setFollowingList(followingSnap.docs.map(doc => doc.data()));
+
+      const postsSnap = await getDocs(query(collection(db, "postsDesigner"), where("userId", "==", userId)));
+      setPostsCount(postsSnap.size);
+
+      const postsData = postsSnap.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setPosts(postsData);
+    } else {
+      console.error("User not found");
+    }
+
+    const followingDoc = await getDoc(doc(db, "following", user.uid, "userFollowing", userId));
+    setIsFollowing(followingDoc.exists());
+
+  } catch (error) {
+    console.error('Error fetching posts: ', error);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, [user, route.params]);
+
 
   useEffect(() => {
     fetchProfileData();
@@ -117,7 +136,10 @@ const ProfileScreen = ({ route }) => {
         userId: userId,
         userName: profileUserName,
         userImgUrl: profileImageUrl
+        
       });
+      console.log("Fetched profile image URL: ", userData.userImgUrl);
+
       await setDoc(doc(db, "followers", userId, "userFollowers", user.uid), {
         userId: user.uid,
         userName: userName,
@@ -155,6 +177,7 @@ const handlePostPress = (postId) => {
   navigation.navigate('PostDetailsScreen', { postId });
 };
 
+
 // تحديث renderPost لتضمين onPress
 const renderPost = ({ item }) => (
   <TouchableOpacity onPress={() => handlePostPress(item.id)}>
@@ -175,10 +198,12 @@ const renderPost = ({ item }) => (
                 <Icon name="paint-brush" size={20} color="#fff" />
               </TouchableOpacity>
               <View style={styles.profileImageContainer}>
-                <Image
-                  style={styles.profileImage}
-                  source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
-                />
+              <Image
+  style={styles.profileImage}
+  source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
+/>
+
+
                 <Text style={styles.userName}>{profileUserName}</Text>
               </View>
             </View>
@@ -190,6 +215,11 @@ const renderPost = ({ item }) => (
               </TouchableOpacity>
             )}
        * */   }
+
+
+
+       {/*back to paje masse.. */}
+      
 
             <View style={styles.profileContent}>
               <View style={styles.userInfoContainer}>
@@ -489,6 +519,12 @@ const styles = StyleSheet.create({
   postImage: {
     width: '100%',
     height: '100%',
+  },
+  //
+ 
+  backButtonText: {
+    fontSize: 16,
+    color: '#000',
   },
 });
 
