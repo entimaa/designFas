@@ -81,6 +81,7 @@ const Chat = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: username,
+      headerTitleAlign: 'center',  // محاذاة العنوان إلى اليسار
       headerLeft: () => (
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <FontAwesome name="chevron-left" size={25} color="#000" />
@@ -88,6 +89,7 @@ const Chat = () => {
       ),
     });
   }, [navigation, username]);
+  
 
   useLayoutEffect(() => {
     const collRef = collection(db, 'chats', chatId, 'messages');
@@ -158,12 +160,12 @@ const Chat = () => {
     <Bubble
       {...props}
       wrapperStyle={{
-        left: { backgroundColor: '#DCA47C', borderRadius: 15, padding: 5, marginBottom: 5 },
-        right: { backgroundColor: '#DEAC80', borderRadius: 15, padding: 5, marginBottom: 5 },
+        left: { backgroundColor: '#EADBC8', borderRadius: 15, padding: 5, marginBottom: 5 },
+        right: { backgroundColor: '#DAC0A3', borderRadius: 15, padding: 5, marginBottom: 5 },
       }}
       textStyle={{
-        left: { color: '#fff' },
-        right: { color: '#fff' },
+        left: { color: '#000' },
+        right: { color: '#000' },
       }}
       onPress={() => {
         if (props.currentMessage.image) {
@@ -177,13 +179,13 @@ const Chat = () => {
   const renderSend = (props) => (
     <View style={styles.bottomContainer}>
       <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
-        <FontAwesome name="camera" size={25} color="#8D493A" />
+        <FontAwesome name="camera" size={25} color="#914F1E" />
       </TouchableOpacity>
       <View style={styles. line} />
       <Send {...props}>
         <View style={styles.sendingContainer}>
           
-          <FontAwesome name="paper-plane" size={25} color="#8D493A" />
+          <FontAwesome name="paper-plane" size={25} color="#914F1E" />
         </View>
       </Send>
     </View>
@@ -198,7 +200,9 @@ const Chat = () => {
       {...props}
       containerStyle={{
         ...props.containerStyle,
-        borderRadius: 50, // تعديل هذه القيمة لجعل الزوايا دائرية
+        borderRadius: 50, 
+       
+        backgroundColor:'#EADBC8',// تعديل هذه القيمة لجعل الزوايا دائرية
       }}
     />
   );
@@ -262,7 +266,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-      backgroundColor:'#000',
+      backgroundColor:'#',
     padding: 2,
   },
   modalImage: {
