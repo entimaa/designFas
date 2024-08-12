@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, Image, Button, Platform, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, Image, Alert, Platform, Text } from 'react-native';
 import { collection, orderBy, query, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
-import { GiftedChat, Bubble, Send } from 'react-native-gifted-chat';
+import { GiftedChat, Bubble, Send, InputToolbar } from 'react-native-gifted-chat';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -13,6 +13,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [imageUri, setImageUri] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [fullImageVisible, setFullImageVisible] = useState(false);
   const { user, userImgUrl } = useAuth();
   const navigation = useNavigation();
   const route = useRoute();
@@ -34,13 +35,20 @@ const Chat = () => {
   };
 
   const takeImage = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Sorry, we need camera permissions to make this work!');
+      return;
+    }
+
     let result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 4],
       quality: 1,
     });
-    if (!result.cancelled) {
+
+    if (!result.canceled) {
       setImageUri(result.assets[0].uri);
       setModalVisible(true);
     }
@@ -78,12 +86,6 @@ const Chat = () => {
           <FontAwesome name="chevron-left" size={25} color="#000" />
         </TouchableOpacity>
       ),
-      /*
-      headerRight: () => (
-        <TouchableOpacity onPress={handleImagePicker}>
-          <FontAwesome name="image" size={25} color="#000" />
-        </TouchableOpacity>
-      ),*/
     });
   }, [navigation, username]);
 
@@ -113,8 +115,11 @@ const Chat = () => {
       createdAt: serverTimestamp(),
       text,
       user: messageUser,
-      image,
     };
+
+    if (image) {
+      messageData.image = image;
+    }
 
     addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
   }, [user?.uid, userId, chatId]);
@@ -129,8 +134,6 @@ const Chat = () => {
     try {
       await uploadBytes(storageRef, blob);
       const imageUrl = await getDownloadURL(storageRef);
-
-      console.log('Image uploaded successfully:', imageUrl);
 
       const newMessage = {
         _id: new Date().getTime().toString(),
@@ -155,23 +158,18 @@ const Chat = () => {
     <Bubble
       {...props}
       wrapperStyle={{
-        left: { backgroundColor: '#B3B3B3' },
-        right: { backgroundColor: '#2e64e5' },
+        left: { backgroundColor: '#DCA47C', borderRadius: 15, padding: 5, marginBottom: 5 },
+        right: { backgroundColor: '#DEAC80', borderRadius: 15, padding: 5, marginBottom: 5 },
       }}
       textStyle={{
-        left: { color: 'white' },
-        right: { color: 'white' },
+        left: { color: '#fff' },
+        right: { color: '#fff' },
       }}
-      renderMessageImage={() => {
+      onPress={() => {
         if (props.currentMessage.image) {
-          return (
-            <Image
-              source={{ uri: props.currentMessage.image }}
-              style={styles.messageImage}
-            />
-          );
+          setImageUri(props.currentMessage.image);
+          setFullImageVisible(true);
         }
-        return null;
       }}
     />
   );
@@ -179,23 +177,36 @@ const Chat = () => {
   const renderSend = (props) => (
     <View style={styles.bottomContainer}>
       <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
-        <FontAwesome name="camera" size={25} color="#2e64e5" />
+        <FontAwesome name="camera" size={25} color="#8D493A" />
       </TouchableOpacity>
+      <View style={styles. line} />
       <Send {...props}>
         <View style={styles.sendingContainer}>
-          <FontAwesome name="paper-plane" size={25} color="#2e64e5" style={{ marginBottom: 10 }} />
+          
+          <FontAwesome name="paper-plane" size={25} color="#8D493A" />
         </View>
       </Send>
     </View>
   );
-  
 
   const scrollToBottomComponent = () => (
-    <FontAwesome name='angle-double-down' size={22} color='#333' />
+    <FontAwesome name='angle-double-down' size={22} color='#0078fe' />
   );
 
+  const renderInputToolbar = (props) => (
+    <InputToolbar
+      {...props}
+      containerStyle={{
+        ...props.containerStyle,
+        borderRadius: 50, // تعديل هذه القيمة لجعل الزوايا دائرية
+      }}
+    />
+  );
+  
+  
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#f2f2f2',bottom:20 }}>
       <GiftedChat
         messages={messages}
         onSend={(messages) => onSend(messages)}
@@ -208,72 +219,119 @@ const Chat = () => {
         renderSend={renderSend}
         scrollToBottom
         scrollToBottomComponent={scrollToBottomComponent}
+        renderInputToolbar={renderInputToolbar}
       />
       <Modal
         visible={modalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <Image source={{ uri: imageUri }} style={styles.modalImage} />
+
           <View style={styles.modalButtonsContainer}>
-            <Button title="Send" onPress={handleUploadImage} color="#2e64e5" />
-            <Button title="Cancel" onPress={() => setModalVisible(false)} color="#f00" />
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
+              <Text style={styles.buttonText}>Cancel</Text>
+              <FontAwesome name="times" size={20} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleUploadImage} style={styles.sendButton}>
+              <Text style={styles.buttonText}>Send</Text>
+              <FontAwesome name="paper-plane" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      <Modal
+        visible={fullImageVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFullImageVisible(false)}
+      >
+        <TouchableOpacity style={styles.fullImageContainer} onPress={() => setFullImageVisible(false)}>
+          <Image source={{ uri: imageUri }} style={styles.fullImage} />
+        </TouchableOpacity>
       </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  sendingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-    marginBottom: 5,
-  },
-  messageImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
-    marginVertical: 5,
-    marginHorizontal: 10,
-  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor:'#000',
+    padding: 2,
   },
   modalImage: {
-    width: 300,
-    height: 300,
-    borderRadius: 15,
+    width: '100%',
+    height: '80%',
+    marginBottom: 20,
   },
   modalButtonsContainer: {
+    
     flexDirection: 'row',
-    marginTop: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ff4d4d',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  sendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4caf50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    marginRight: 5,
+  },
+  fullImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   bottomContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 10,
-    marginBottom: 5,
-  },
-  sendingContainer: {
-    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,
   },
   imagePicker: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
-    marginBottom: 5,
+    marginHorizontal: 10,
   },
-
+  sendingContainer: {
+    bottom:10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  line: {
+    width: 1, // عرض الحاجز
+    height: 27, // ارتفاع الحاجز
+    backgroundColor: '#8D493A', // لون الحاجز
+    marginHorizontal: 1, // المسافة بين الأيقونتين
+  },
 });
 
 export default Chat;
+
