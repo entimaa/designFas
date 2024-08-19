@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput ,TouchableWithoutFeedback} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 import Icon from 'react-native-vector-icons/FontAwesome';
-//<FontAwesomeIcon icon="fa-regular fa-heart" />
+import Modal from 'react-native-modal';
+
 const PostCard = ({ post, onPostDelete }) => {
   const [heartColor, setHeartColor] = useState('#000');
   const [commentColor, setCommentColor] = useState('#000');
-  const [showComments, setShowComments] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState(post.comments || []);
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
@@ -43,6 +44,10 @@ const PostCard = ({ post, onPostDelete }) => {
     return () => unsubscribe();
   }, [post.id, user.uid]);
 
+  useEffect(() => {
+    setHeartColor(likedByUser ? 'red' : '#000');
+  }, [likedByUser]);
+
   const toggleHeartColor = async () => {
     const postRef = doc(db, 'postsDesigner', post.id);
     try {
@@ -71,7 +76,7 @@ const PostCard = ({ post, onPostDelete }) => {
 
   const toggleCommentColor = () => {
     setCommentColor((prevColor) => (prevColor === '#000' ? '#000' : '#000'));
-    setShowComments((prevShow) => !prevShow);
+    setShowCommentsModal(true);
   };
 
   const navigateToUserProfile = () => {
@@ -86,7 +91,7 @@ const PostCard = ({ post, onPostDelete }) => {
     try {
       const postRef = doc(db, 'postsDesigner', post.id);
       await deleteDoc(postRef);
-      onPostDelete(post.id); // Update the parent component about the deletion
+      onPostDelete(post.id);
       Alert.alert('Success', 'Post deleted successfully!');
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -127,7 +132,7 @@ const PostCard = ({ post, onPostDelete }) => {
       });
 
       setNewComment('');
-      setShowComments(true);
+      setComments([...comments, commentData]);
     } catch (error) {
       console.error('Error adding comment:', error);
       Alert.alert('Error', 'Failed to add comment.');
@@ -141,7 +146,7 @@ const PostCard = ({ post, onPostDelete }) => {
       await updateDoc(postRef, {
         comments: updatedComments,
       });
-      setComments(updatedComments); // Update local state
+      setComments(updatedComments);
       Alert.alert('Success', 'Comment deleted successfully!');
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -163,6 +168,7 @@ const PostCard = ({ post, onPostDelete }) => {
       Alert.alert('Error', 'You can only delete your own comments.');
     }
   };
+  
 
   const handleReportPost = async () => {
     const postRef = doc(db, 'postsDesigner', post.id);
@@ -179,7 +185,7 @@ const PostCard = ({ post, onPostDelete }) => {
 
       if (reportCount + 1 >= 4) {
         await deleteDoc(postRef);
-        onPostDelete(post.id); // Update the parent component about the deletion
+        onPostDelete(post.id);
         Alert.alert('Post Deleted', 'This post has been deleted due to multiple reports.');
       } else {
         Alert.alert('Reported', 'Thank you for reporting. The post will be reviewed.');
@@ -191,7 +197,7 @@ const PostCard = ({ post, onPostDelete }) => {
   };
 
   const confirmReport = () => {
-    if (user.uid !== post.userId) { // Only show report button if the user is not the post owner
+    if (user.uid !== post.userId) {
       Alert.alert(
         'Report Post',
         'Are you sure you want to report this post?',
@@ -202,6 +208,8 @@ const PostCard = ({ post, onPostDelete }) => {
       );
     }
   };
+
+  
 
   return (
     <View style={styles.container}>
@@ -221,29 +229,31 @@ const PostCard = ({ post, onPostDelete }) => {
             <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
           </View>
         </View>
-        
+
         <Text style={styles.postTitle}>{post.title}</Text>
         {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
         <Text style={styles.postContent}>{post.content}</Text>
         <View style={styles.separator}></View>
         <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
-         <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
-           <Text style={styles.iconText}>{likesCount} likes</Text>
-            </TouchableOpacity>
+          <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
+          <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
+            <Text style={styles.iconText}>{likesCount} likes</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity onPress={toggleCommentColor} style={styles.iconButton}>
-             <Icon name={showComments ? 'comment' : 'comment-o'} size={20} color={commentColor} />
-               <Text style={styles.iconText}>{comments.length} comments</Text>
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowCommentsModal(true)} style={styles.iconButton}>
+            <Icon name={showCommentsModal ? 'comment' : 'comment-o'} size={20} color={commentColor} />
+            <Text style={styles.iconText}>{comments.length} comments</Text>
+          </TouchableOpacity>
+
           {user.uid !== post.userId && (
             <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
               <Image
-                source={require('../../pic/iconsPost/REPORT.png')} // تأكد من أن المسار صحيح للصورة
+                source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
                 style={styles.reportIcon}
               />
             </TouchableOpacity>
           )}
+
           {user.uid === post.userId && (
             <TouchableOpacity onLongPress={confirmDelete} style={styles.iconButton}>
               <Icon name="trash" size={20} color="red" />
@@ -251,43 +261,52 @@ const PostCard = ({ post, onPostDelete }) => {
             </TouchableOpacity>
           )}
         </View>
-        
-        {showComments && (
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
-                <View style={styles.commentContainer}>
-                  <Image
-                    style={styles.commentUserImg}
-                    source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.commentTextContainer}>
-                    <Text style={styles.commentUsername}>{item.username}</Text>
-                    <Text style={styles.commentText}>{item.comment}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        )}
-        
-        {showComments && (
-          <View style={styles.commentInputContainer}>
-            <TextInput
-              style={styles.commentInput}
-              value={newComment}
-              onChangeText={setNewComment}
-              placeholder="Add a comment..."
-            />
-            <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
-              <Icon name="paper-plane" size={20} color="#8D493A" />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
+
+      <Modal
+  isVisible={showCommentsModal}
+  onBackdropPress={() => setShowCommentsModal(false)}
+  onSwipeComplete={() => setShowCommentsModal(false)}
+  swipeDirection="left"
+  style={styles.modal}
+>
+  <TouchableWithoutFeedback>
+    <View style={styles.modalContent}>
+      <FlatList
+        data={comments}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
+            <View style={styles.commentContainer}>
+              <Image
+                style={styles.commentUserImg}
+                source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
+                resizeMode="cover"
+              />
+              <View style={styles.commentTextContainer}>
+                <Text style={styles.commentUsername}>{item.username}</Text>
+                <Text style={styles.commentText}>{item.comment}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={{ flexGrow: 1 }}
+      />
+      <View style={styles.commentInputContainer}>
+        <TextInput
+          style={styles.commentInput}
+          value={newComment}
+          onChangeText={setNewComment}
+          placeholder="Add a comment..."
+        />
+        <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
+          <Icon name="paper-plane" size={20} color="#8D493A" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  </TouchableWithoutFeedback>
+</Modal>
+
     </View>
   );
 };
@@ -295,13 +314,11 @@ const PostCard = ({ post, onPostDelete }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#D0B8A8',
-
     flex: 1,
     padding: 10,
   },
   card: {
-    backgroundColor:'#F8EDE3',
-
+    backgroundColor: '#F8EDE3',
     borderRadius: 8,
     padding: 10,
     marginVertical: 10,
@@ -343,10 +360,8 @@ const styles = StyleSheet.create({
     height: 500,
     borderRadius: 8,
     marginVertical: 10,
-    resizeMode: 'cover', // أو 'contain' حسب ما تفضل
+    resizeMode: 'cover', // Or 'contain' depending on your preference
   },
-  
-  
   postContent: {
     fontSize: 16,
     marginBottom: 10,
@@ -409,13 +424,22 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   commentButton: {
-    left:-4
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  commentButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    marginLeft: 5,
+  modal: {
+    justifyContent: 'flex-end',
+    margin: 0,
   },
+  modalContent: {
+    backgroundColor: '#F8EDE3',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    padding: 20,
+    flex: 1,
+    justifyContent: 'space-between', // Ensure the input area stays at the bottom
+  },
+  
 });
 
 export default PostCard;

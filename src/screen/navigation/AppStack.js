@@ -176,7 +176,7 @@ const MainStack = () => {
 
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="MainProfileScreen" component={HomeTabs} options={{ headerShown: false }} />
       <Stack.Screen 
         name="UserProfile" 
         component={ProfileScreen} 

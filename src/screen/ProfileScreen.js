@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, FlatList, Dimensions } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, FlatList, Dimensions} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../../data/DataFirebase';
@@ -121,39 +121,71 @@ const fetchProfileData = useCallback(async () => {
 
     const userId = route.params.userId;
 
-    if (isFollowing) {
-      await deleteDoc(doc(db, "following", user.uid, "userFollowing", userId));
-      await deleteDoc(doc(db, "followers", userId, "userFollowers", user.uid));
-      setIsFollowing(false);
-      await updateDoc(doc(db, "userDesigner", userId), {
-        followersCount: increment(-1),
-      });
-      await updateDoc(doc(db, "userClient", userId), {
-        followersCount: increment(-1),
-      });
-    } else {
-      await setDoc(doc(db, "following", user.uid, "userFollowing", userId), {
-        userId: userId,
-        userName: profileUserName,
-        userImgUrl: profileImageUrl
-        
-      });
-      console.log("Fetched profile image URL: ", userData.userImgUrl);
+    try {
+        if (isFollowing) {
+            // Remove follow
+            await deleteDoc(doc(db, "following", user.uid, "userFollowing", userId));
+            await deleteDoc(doc(db, "followers", userId, "userFollowers", user.uid));
+            setIsFollowing(false);
 
-      await setDoc(doc(db, "followers", userId, "userFollowers", user.uid), {
-        userId: user.uid,
-        userName: userName,
-        userImgUrl: userImgUrl
-      });
-      setIsFollowing(true);
-      await updateDoc(doc(db, "userDesigner", userId), {
-        followersCount: increment(1),
-      });
-      await updateDoc(doc(db, "userClient", userId), {
-        followersCount: increment(1),
-      });
+            // Update follower count
+            const userDesignerDoc = await getDoc(doc(db, "userDesigner", userId));
+            const userClientDoc = await getDoc(doc(db, "userClient", userId));
+
+            if (userDesignerDoc.exists()) {
+                await updateDoc(doc(db, "userDesigner", userId), {
+                    followersCount: increment(-1),
+                });
+            }
+
+            if (userClientDoc.exists()) {
+                await updateDoc(doc(db, "userClient", userId), {
+                    followersCount: increment(-1),
+                });
+            }
+
+            setFollowersCount(prevCount => prevCount - 1);
+        } else {
+            // Add follow
+            await setDoc(doc(db, "following", user.uid, "userFollowing", userId), {
+                userId: userId,
+                userName: profileUserName,
+                userImgUrl: profileImageUrl
+            });
+
+            await setDoc(doc(db, "followers", userId, "userFollowers", user.uid), {
+                userId: user.uid,
+                userName: userName,
+                userImgUrl: userImgUrl
+            });
+            setIsFollowing(true);
+
+            // Update follower count
+            const userDesignerDoc = await getDoc(doc(db, "userDesigner", userId));
+            const userClientDoc = await getDoc(doc(db, "userClient", userId));
+
+            if (userDesignerDoc.exists()) {
+                await updateDoc(doc(db, "userDesigner", userId), {
+                    followersCount: increment(1),
+                });
+            }
+
+            if (userClientDoc.exists()) {
+                await updateDoc(doc(db, "userClient", userId), {
+                    followersCount: increment(1),
+                });
+            }
+
+            setFollowersCount(prevCount => prevCount + 1);
+        }
+    } catch (error) {
+        console.error('Error updating follow status: ', error);
     }
-  };
+};
+
+  
+  
+  
 
   const toggleFollowersModal = () => {
     setFollowersModalVisible(!followersModalVisible);
@@ -199,9 +231,9 @@ const renderPost = ({ item }) => (
               </TouchableOpacity>
               <View style={styles.profileImageContainer}>
               <Image
-  style={styles.profileImage}
-  source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
-/>
+                       style={styles.profileImage}
+                       source={profileImageUrl ? { uri: profileImageUrl } : require('../pic/avtar.png')}
+              />
 
 
                 <Text style={styles.userName}>{profileUserName}</Text>
@@ -290,20 +322,32 @@ const renderPost = ({ item }) => (
               </View>
 
               {!isCurrentUser && (
-                <View style={styles.actionButtonsContainer}>
-                  <TouchableOpacity style={styles.messageButton} onPress={handleSendMessage}>
-                    <Text style={styles.messageButtonText}>Message</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.followButton, isFollowing ? styles.following : styles.notFollowing]}
-                    onPress={handleFollow}
-                  >
-                    <Text style={styles.followButtonText}>
-                      {isFollowing ? 'Unfollow' : 'Follow'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+  <View style={styles.actionButtonsContainer}>
+    <TouchableOpacity
+      style={styles.messageButton}
+      onPress={handleSendMessage}
+    >
+      <Image
+        source={require('../pic/chat.png')} // استبدل بالمسار الفعلي للصورة
+        style={styles.messageButtonImage}
+      />
+    </TouchableOpacity>
+    <TouchableOpacity
+  style={[styles.followButton, isFollowing ? styles.following : styles.notFollowing]}
+  onPress={handleFollow}
+>
+  <Image
+    source={isFollowing
+      ? require('../pic/followgreen.png') // مسار الصورة للإلغاء
+      : require('../pic/follow.png')   // مسار الصورة للمتابعة
+    }
+    style={styles.followButtonImage}
+  />
+</TouchableOpacity>
+
+  </View>
+)}
+
             </View>
             
           </View>
@@ -317,18 +361,29 @@ const renderPost = ({ item }) => (
           }
           style={styles.scrollView}
         >
+  </ScrollView>
+   </View>
 
-          <FlatList
-            data={posts}
-            renderItem={renderPost}
-            keyExtractor={(item) => item.id}
-            numColumns={3}
-            contentContainerStyle={styles.postsContainer}
-          />
-        </ScrollView>
+
+   {/*! justtttttttttttt to post */}
+
+   <FlatList
+  data={posts}
+  renderItem={renderPost}
+  keyExtractor={(item) => item.id}
+  numColumns={3}
+  contentContainerStyle={styles.postsContainer}
+  refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    />
+  }
+/>
+
+      
         
-      </View>
-
+     
     
     </View>
     /******************** */
@@ -350,9 +405,7 @@ const styles = StyleSheet.create({
     flex: 1,
     
   },
-  fixedHeader: {
-    flex: 1,
-  },
+
   scrollViewContainer: {
     paddingBottom: 100,
   },
@@ -473,33 +526,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 20,
   },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
+    justifyContent: 'center',
+  },
   messageButton: {
-    backgroundColor: '#0084ff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    padding: 10,
     borderRadius: 5,
     marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  messageButtonImage: {
+    width: 27, // يمكنك ضبط الحجم حسب الحاجة
+    height: 25, // يمكنك ضبط الحجم حسب الحاجة
+  },
+
+
   messageButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
   },
   followButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    padding: 10,
     borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  followButtonText: {
-    fontSize: 16,
+
+  followButtonImage: {
+    width: 24, // يمكنك ضبط الحجم حسب الحاجة
+    height: 24, // يمكنك ضبط الحجم حسب الحاجة
   },
   following: {
-    backgroundColor: '#ddd',
   },
   notFollowing: {
-    backgroundColor: '#00c853',
   },
   postsContainer: {
-    marginTop: 10,
+    marginTop: 1,
   },
   lineContainer: {
     flexDirection: 'row',
@@ -529,4 +595,3 @@ const styles = StyleSheet.create({
 });
 
 export default ProfileScreen;
-
