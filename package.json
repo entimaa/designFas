@@ -60,7 +60,8 @@
     "reanimated-bottom-sheet": "^1.0.0-alpha.22"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "react-codemod": "^5.4.4"
   },
   "private": true
 }
