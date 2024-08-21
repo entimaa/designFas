@@ -15,7 +15,7 @@ export  const styles = StyleSheet.create({
       marginBottom: 20,
       color: '#fff', // Change the text color to white
     },
-     registerOptionLoginScreen:
+ registerOptionLoginScreen:
  {
   justifyContent: 'center',
       flexDirection: 'row',
@@ -36,16 +36,7 @@ export  const styles = StyleSheet.create({
       color: 'red',
       marginBottom: 10,
     },
-    loginButton:{
-      height: 35,
-          width: '75%',
-          backgroundColor: '#584858',
-          borderRadius: 10,
-          marginTop: '5%',
-          marginRight:'5%',
-          justifyContent: 'center',
-          alignSelf: 'center',
-     },
+   
     loginButtonText:{
       color: '#fff',
       alignSelf: 'center',
@@ -112,8 +103,24 @@ export  const styles = StyleSheet.create({
       backgroundColor: '#584858', // تغيير لون الخلفية إلى اللون البرتقالي
       borderRadius: 18, // زيادة قوس الزاوية لجعل المربع أكثر دائرية
       justifyContent: 'center', // محاذاة النص في الوسط عمودياً
-      alignItems: 'center', // محاذاة النص في الوسط أفقياً
+      alignItems: 'center', 
+      textAlign:'center'// محاذاة النص في الوسط أفقياً
       
     
      },
+     buttonTitleStyle: {
+      color: '#fff',
+      textAlign: 'center', // Center align text horizontally
+      fontWeight: 'bold',
+    },
+     buttonStyle: {
+      
+      backgroundColor: '#584858',
+      borderRadius: 18,
+    },
+    animation: {
+      width: 150,
+      height: 150,
+      marginBottom: 20,
+    }
   });

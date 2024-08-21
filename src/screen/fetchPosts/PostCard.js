@@ -267,45 +267,50 @@ const PostCard = ({ post, onPostDelete }) => {
   isVisible={showCommentsModal}
   onBackdropPress={() => setShowCommentsModal(false)}
   onSwipeComplete={() => setShowCommentsModal(false)}
-  swipeDirection="left"
+  swipeDirection="down"
   style={styles.modal}
 >
-  <TouchableWithoutFeedback>
-    <View style={styles.modalContent}>
-      <FlatList
-        data={comments}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
-            <View style={styles.commentContainer}>
-              <Image
-                style={styles.commentUserImg}
-                source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
-                resizeMode="cover"
-              />
-              <View style={styles.commentTextContainer}>
-                <Text style={styles.commentUsername}>{item.username}</Text>
-                <Text style={styles.commentText}>{item.comment}</Text>
-              </View>
+  <View style={styles.modalContent}>
+    <FlatList
+      data={comments}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
+          <View style={styles.commentContainer}>
+            <Image
+              style={styles.commentUserImg}
+              source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
+              resizeMode="cover"
+            />
+            <View style={styles.commentTextContainer}>
+              <Text style={styles.commentUsername}>{item.username}</Text>
+              <Text style={styles.commentText}>{item.comment}</Text>
             </View>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={{ flexGrow: 1 }}
-      />
-      <View style={styles.commentInputContainer}>
-        <TextInput
-          style={styles.commentInput}
-          value={newComment}
-          onChangeText={setNewComment}
-          placeholder="Add a comment..."
-        />
-        <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
-          <Icon name="paper-plane" size={20} color="#8D493A" />
+          </View>
         </TouchableOpacity>
-      </View>
+      )}
+    />
+    <View style={styles.commentInputContainer}>
+      <TextInput
+        style={styles.commentInput}
+        value={newComment}
+        onChangeText={setNewComment}
+        placeholder="Add a comment..."
+      />
+      <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
+        <Icon name="paper-plane" size={20} color="#8D493A" />
+      </TouchableOpacity>
     </View>
-  </TouchableWithoutFeedback>
+    {/* Button to close the modal manually */}
+    <TouchableOpacity 
+      style={styles.closeButton} 
+      onPress={() => setShowCommentsModal(false)}
+    >
+      <Text style={styles.closeButtonText}>Close</Text>
+    </TouchableOpacity>
+  </View>
 </Modal>
+
 
     </View>
   );
@@ -351,8 +356,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   postTitle: {
-    fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 5,
   },
   postImage: {
@@ -436,7 +440,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     padding: 20,
-    flex: 1,
+    height: '80%',
     justifyContent: 'space-between', // Ensure the input area stays at the bottom
   },
   

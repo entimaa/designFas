@@ -251,7 +251,7 @@ const renderPost = ({ item }) => (
 
 
        {/*back to paje masse.. */}
-      
+    
 
             <View style={styles.profileContent}>
               <View style={styles.userInfoContainer}>

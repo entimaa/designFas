@@ -21,8 +21,9 @@ import { signOut } from 'firebase/auth'; // تأكد من صحة المسار ب
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+
 const ProfileStack = () => {
-  const { user } = useAuth();
+  const { user, signOutUser } = useAuth();
   const navigation = useNavigation();
   const actionSheetRef = useRef();
 
@@ -36,21 +37,25 @@ const ProfileStack = () => {
     } else if (index === 1) {
       // Show loading indicator
       Alert.alert("Logging Out", "Please wait while we log you out.", [{ text: "OK" }]);
-      
+
       try {
-        await signOut(auth); // Log out user
-        navigation.navigate('LoginScreen'); // Navigate to Login screen
+        await signOutUser(); // Use the signOutUser function from AuthContext
+        navigation.navigate('Login'); // Navigate to Login screen
       } catch (error) {
         console.error('Log Out Error: ', error);
-        Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+       // Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
       }
     }
   };
-  
 
   const showActionSheet = () => {
     actionSheetRef.current?.show();
   };
+
+  if (!user) {
+    // If user is not available, show a placeholder or handle accordingly
+    return null;
+  }
 
   return (
     <>
@@ -87,6 +92,8 @@ const ProfileStack = () => {
     </>
   );
 };
+
+
 
 const MessageStack = () => (
   <Stack.Navigator>
@@ -176,7 +183,7 @@ const MainStack = () => {
 
   return (
     <Stack.Navigator>
-      <Stack.Screen name="MainProfileScreen" component={HomeTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="HomeMainProfile" component={HomeTabs} options={{ headerShown: false }} />
       <Stack.Screen 
         name="UserProfile" 
         component={ProfileScreen} 

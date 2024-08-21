@@ -269,46 +269,54 @@ const PostDetailsScreen = () => {
          </View>
 
          {/* Modal for comments */}
-         <Modal
-           isVisible={showCommentsModal}
-           onBackdropPress={() => setShowCommentsModal(false)}
-           onSwipeComplete={() => setShowCommentsModal(false)}
-           swipeDirection="down"
-           style={styles.modal}
-         >
-           <View style={styles.modalContent}>
-             <FlatList
-               data={comments}
-               keyExtractor={(item) => item.id}
-               renderItem={({ item }) => (
-                 <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
-                   <View style={styles.commentContainer}>
-                     <Image
-                       style={styles.commentUserImg}
-                       source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
-                       resizeMode="cover"
-                     />
-                     <View style={styles.commentTextContainer}>
-                       <Text style={styles.commentUsername}>{item.username}</Text>
-                       <Text style={styles.commentText}>{item.comment}</Text>
-                     </View>
-                   </View>
-                 </TouchableOpacity>
-               )}
-             />
-             <View style={styles.commentInputContainer}>
-               <TextInput
-                 style={styles.commentInput}
-                 value={newComment}
-                 onChangeText={setNewComment}
-                 placeholder="Add a comment..."
-               />
-               <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
-                 <Icon name="paper-plane" size={20} color="#8D493A" />
-               </TouchableOpacity>
-             </View>
-           </View>
-         </Modal>
+        <Modal
+  isVisible={showCommentsModal}
+  onBackdropPress={() => setShowCommentsModal(false)}
+  onSwipeComplete={() => setShowCommentsModal(false)}
+  swipeDirection="down"
+  style={styles.modal}
+>
+  <View style={styles.modalContent}>
+    <FlatList
+      data={comments}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <TouchableOpacity onLongPress={() => confirmDeleteComment(item.id, item.userId)}>
+          <View style={styles.commentContainer}>
+            <Image
+              style={styles.commentUserImg}
+              source={item.userImgUrl ? { uri: item.userImgUrl } : require('../../pic/avtar.png')}
+              resizeMode="cover"
+            />
+            <View style={styles.commentTextContainer}>
+              <Text style={styles.commentUsername}>{item.username}</Text>
+              <Text style={styles.commentText}>{item.comment}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
+    />
+    <View style={styles.commentInputContainer}>
+      <TextInput
+        style={styles.commentInput}
+        value={newComment}
+        onChangeText={setNewComment}
+        placeholder="Add a comment..."
+      />
+      <TouchableOpacity onPress={handleAddComment} style={styles.commentButton}>
+        <Icon name="paper-plane" size={20} color="#8D493A" />
+      </TouchableOpacity>
+    </View>
+    {/* Button to close the modal manually */}
+    <TouchableOpacity 
+      style={styles.closeButton} 
+      onPress={() => setShowCommentsModal(false)}
+    >
+      <Text style={styles.closeButtonText}>Close</Text>
+    </TouchableOpacity>
+  </View>
+</Modal>
+
        </KeyboardAvoidingView>
      );
    };
