@@ -1,6 +1,6 @@
 // src/screen/Admin/EditCategory.js
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, SafeAreaView, Alert,TouchableOpacity } from "react-native";
 import { db } from '../../../data/DataFirebase'; // تأكد من المسار الصحيح
 import { doc, updateDoc } from 'firebase/firestore';
 
@@ -33,7 +33,9 @@ const EditCategory = ({ route, navigation }) => {
         value={categoryName}
         onChangeText={setCategoryName}
       />
-      <Button title="Update Category" onPress={handleUpdateCategory} />
+      <TouchableOpacity style={styles.button} onPress={handleUpdateCategory}>
+        <Text style={styles.buttonText}>Update Category</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -47,7 +49,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 24,
     color: "#343a40",
@@ -57,9 +59,27 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#ced4da",
-    borderRadius: 4,
+    borderRadius: 8, // Increased border radius for rounded corners
     marginBottom: 16,
+    backgroundColor: '#fff', // Background color
+    fontSize: 16,
+    color: '#333',
   },
+  button: {
+    backgroundColor: '#007bff', // Button background color
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#0056b3', // Button border color
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff', // Text color
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
 });
 
 export default EditCategory;

@@ -68,7 +68,7 @@ const CategoryList = ({ navigation }) => {
       <Text style={styles.itemText}>{item.name}</Text>
       <View style={styles.actions}>
         <TouchableOpacity onPress={() => handleEditCategory(item)}>
-          <Ionicons name="create-outline" size={24} color="#ffd700" />
+          <Ionicons name="create-outline" size={24} color="#3652AD" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDeleteCategory(item.id)}>
           <Ionicons name="trash-outline" size={24} color="#dc143c" style={styles.deleteIcon} />
@@ -88,7 +88,7 @@ const CategoryList = ({ navigation }) => {
           onChangeText={setNewCategory}
         />
         <TouchableOpacity style={styles.addButton} onPress={handleAddCategory}>
-          <Ionicons name="add-circle-outline" size={40} color="#32cd32" />
+          <Ionicons name="add-circle-outline" size={37} color="#0F67B1" />
         </TouchableOpacity>
       </View>
       <FlatList
@@ -124,12 +124,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0e0e0",
     borderRadius: 8,
-    marginRight: 8,
+    marginRight: 0,
     backgroundColor: "#ffffff",
     elevation: 3,
   },
   addButton: {
-    padding: 8,
+    padding: 9,
   },
   item: {
     padding: 16,

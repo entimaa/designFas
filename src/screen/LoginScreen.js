@@ -17,11 +17,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { validateEmail, validatePassword, getErrorText } from '../messegeErorr/errorMessage';
 import { styles } from '../styles/styles';
+import { useNavigation } from '@react-navigation/native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const LoginScreen = ({ navigation }) => {
-  const { signIn } = useAuth();
+const LoginScreen = () => {
+  const navigation = useNavigation();
+  const { signIn ,isBlocked} = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -45,17 +47,25 @@ const LoginScreen = ({ navigation }) => {
       return;
     }
   
+    
+   
     try {
-      await signIn(email, password);
-      navigation.navigate('Home');
+      const { isBlocked } = await signIn(email, password); // حاول تسجيل الدخول وتحقق من حالة الحظر
+
+      if (isBlocked) {  // إذا كان المستخدم محظورًا، اعرض رسالة تحذير ولا تسمح بالدخول
+        Alert.alert('Account Blocked', 'Your account has been blocked ');
+      } else {
+        //navigation.navigate('ProfileScreen');  // السماح بالدخول إذا لم يكن محظورًا
+      }
     } catch (error) {
-      console.error("Error signing in:", error); // Log the error for debugging
+      console.error("Error signing in:", error);
       const errorMessage = getErrorText(error.code);
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
   
 
   const handleRegister = () => {

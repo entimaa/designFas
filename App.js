@@ -3,7 +3,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import AuthStack from "./src/screen/navigation/AuthStack";
-import Home from "./src/screen/navigation/AppStack"; // تأكد من صحة المسار
+import MainStack from "./src/screen/navigation/AppStack";
+//import HomeStack from "./src/screen/navigation/AppStack"; // تأكد من صحة المسار
 import AdminStack from "./src/screen/navigation/AdminStack"; // تأكد من صحة المسار
 
 const Stack = createStackNavigator();
@@ -36,8 +37,8 @@ const AppNavigation = () => {
         />
       ) : (
         <Stack.Screen
-          name="MainProfile"
-          component={Home}
+          name="MainStack"
+          component={MainStack}
           options={{ headerShown: false }}
         />
       )}

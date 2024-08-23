@@ -4,7 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import AdminHome from "../Admin/AdminHome";
 import  AddCategory from "../Admin/AddCategory"; // تأكد من صحة المسار
 import UsersCountScreen from "../Admin/UsersCountScreen"; // تأكد من صحة المسار
-import ProductsScreen from "../Admin/ProductsScreen"; // تأكد من صحة المسار
+import Report from "../Admin/Report"; // تأكد من صحة المسار
 import EditCategory from "../Admin/EditCategory";
 
 const Stack = createStackNavigator();
@@ -20,7 +20,7 @@ const AdminStack = () => {
       <Stack.Screen
         name="AddCategory"
         component={AddCategory}
-        options={{ title: 'الإشعارات' }}
+        options={{ title: 'Add category' }}
       />
       <Stack.Screen
         name="UsersCount"
@@ -28,9 +28,9 @@ const AdminStack = () => {
         options={{ title: 'عدد المستخدمين' }}
       />
       <Stack.Screen
-        name="Products"
-        component={ProductsScreen}
-        options={{ title: 'إضافة المنتجات' }}
+        name="Report"
+        component={Report}
+        options={{ title: ' Report' }}
       />
        <Stack.Screen
         name="EditCategory"

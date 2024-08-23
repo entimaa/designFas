@@ -12,12 +12,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userName, setUserName] = useState('');
   const [userType, setUserType] = useState('');
+ 
   const [userImgUrl, setUserImgUrl] = useState(null);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [posts, setPosts] = useState([]);
+  const [isBlocked, setIsBlocked] = useState(false);
   const auth = getAuth(app);
-
+//console.log(isBlocked)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -38,6 +40,8 @@ export const AuthProvider = ({ children }) => {
             setUserImgUrl(userData.userImgUrl || null);
             setFollowersCount(userData.followersCount || 0);
             setFollowingCount(userData.followingCount || 0);
+            setIsBlocked(userData.isBlocked  ); // تحديث isBlocked هنا
+            console.log('isBlocked from Firestore:', userData.isBlocked); // للتحقق من القيمة المسجلة في Firestore
             await fetchPosts();
           } else {
             console.log("No such document!");
@@ -52,6 +56,7 @@ export const AuthProvider = ({ children }) => {
         setFollowersCount(0);
         setFollowingCount(0);
         setPosts([]);
+        setIsBlocked(false); // إعادة تعيين حالة isBlocked إلى false
       }
     });
     return () => unsubscribe();
@@ -95,6 +100,8 @@ export const AuthProvider = ({ children }) => {
         userImgUrl: null,
         followersCount: 0,
         followingCount: 0,
+        isBlocked: false
+        
       };
       await setDoc(doc(db, collectionPath, userId), userData);
       if (image) {
@@ -108,8 +115,41 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signIn = async (email, password) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // استرجاع معلومات المستخدم بعد تسجيل الدخول
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        let userDocRef = doc(db, 'userClient', currentUser.uid);
+        let userDoc = await getDoc(userDocRef);
+        if (!userDoc.exists()) {
+          userDocRef = doc(db, 'userDesigner', currentUser.uid);
+          userDoc = await getDoc(userDocRef);
+        }
+  
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setIsBlocked(userData.isBlocked);
+  
+          if (userData.isBlocked) {
+            await signOut(auth);  // تسجيل خروج المستخدم المحظور
+            return { isBlocked: true };
+          }
+  
+          return { isBlocked: false };
+        }
+      }
+      
+      return { isBlocked: false };
+    } catch (error) {
+      console.error('Error signing in:', error);
+      throw error;
+    }
   };
+  
+  
+  
 
   const signOutUser = async () => {
     await signOut(auth);
@@ -119,6 +159,7 @@ export const AuthProvider = ({ children }) => {
     setFollowersCount(0);
     setFollowingCount(0);
     setPosts([]);
+    setIsBlocked(false);
   };
 
   const uploadUserProfileImage = async (userId, image) => {
@@ -149,8 +190,9 @@ export const AuthProvider = ({ children }) => {
       setUserImgUrl, 
       signUp, 
       signIn, 
-      signOutUser 
-    }}>
+      signOutUser ,
+      isBlocked    
+      }}>
       {children}
     </AuthContext.Provider>
   );

@@ -21,6 +21,23 @@ import { signOut } from 'firebase/auth'; // تأكد من صحة المسار ب
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+{
+/* const { signOutUser } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }], // إعادة تعيين التنقل لتوجيه المستخدم إلى شاشة تسجيل الدخول
+      });
+    } catch (error) {
+      console.error('Log Out Error: ', error);
+      Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+    }
+  };
+ */
+}
 
 const ProfileStack = () => {
   const { user, signOutUser } = useAuth();
@@ -36,11 +53,15 @@ const ProfileStack = () => {
       ]);
     } else if (index === 1) {
       // Show loading indicator
-      Alert.alert("Logging Out", "Please wait while we log you out.", [{ text: "OK" }]);
+      Alert.alert("Logging Out", [{ text: "OK" }]);
 
       try {
         await signOutUser(); // Use the signOutUser function from AuthContext
-        navigation.navigate('Login'); // Navigate to Login screen
+        await signOutUser();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }], // إعادة تعيين التنقل لتوجيه المستخدم إلى شاشة تسجيل الدخول
+      }); // Navigate to Login screen
       } catch (error) {
         console.error('Log Out Error: ', error);
        // Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');

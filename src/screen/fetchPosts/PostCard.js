@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput ,TouchableWithoutFeedback} from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput ,TouchableWithoutFeedback,KeyboardAvoidingView,Platform} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc ,getFirestore,collection,addDoc,setDoc} from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -17,6 +17,11 @@ const PostCard = ({ post, onPostDelete }) => {
   const [likedByUser, setLikedByUser] = useState(false);
   const [reportCount, setReportCount] = useState(post.reportCount || 0);
   const [reportedByUser, setReportedByUser] = useState(false);
+  const [reportComment, setReportComment] = useState('');
+  // ? report commett***
+  const [modalVisible, setModalVisible] = useState(false);
+const [reportText, setReportText] = useState('');
+
   const navigation = useNavigation();
   const { user, userName, userImgUrl } = useAuth();
 
@@ -169,47 +174,141 @@ const PostCard = ({ post, onPostDelete }) => {
     }
   };
   
+///////////////////////////////
 
-  const handleReportPost = async () => {
-    const postRef = doc(db, 'postsDesigner', post.id);
-    try {
-      if (reportedByUser) {
-        Alert.alert('Already Reported', 'You have already reported this post.');
-        return;
-      }
 
-      await updateDoc(postRef, {
-        reports: arrayUnion(user.uid),
-        reportCount: reportCount + 1,
-      });
+/////
 
-      if (reportCount + 1 >= 4) {
-        await deleteDoc(postRef);
-        onPostDelete(post.id);
-        Alert.alert('Post Deleted', 'This post has been deleted due to multiple reports.');
-      } else {
-        Alert.alert('Reported', 'Thank you for reporting. The post will be reviewed.');
-      }
-    } catch (error) {
-      console.error('Error reporting post:', error);
-      Alert.alert('Error', 'Failed to report post.');
-    }
-  };
 
-  const confirmReport = () => {
-    if (user.uid !== post.userId) {
-      Alert.alert(
-        'Report Post',
-        'Are you sure you want to report this post?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Report', style: 'destructive', onPress: handleReportPost }
-        ]
-      );
-    }
-  };
+///////////////////////
+/* 
+const handleReportSubmit = async () => {
+  console.log(user.uid);
+  if (!reportText.trim()) {
+    Alert.alert('تنبيه', 'يرجى إدخال نص التقرير.');
+    return;
+  }
+
+  try {
+    const reportRef = doc(db, 'reports', post.id);
+    const commentsRef = collection(reportRef, 'comments'); // مجموعة فرعية للتعليقات
+
+    // إضافة تعليق جديد كمستند منفصل في مجموعة التعليقات
+    await addDoc(commentsRef, {
+      reportText: reportText.trim(),
+      reportedBy: user.uid || 'unknown', // اسم الشخص الذي أبلغ
+      postId: post.id, // معرف البوست
+      reportedTo: post.userId,
+      postTitle: post.title || 'بلا عنوان', // عنوان البوست أو أي معلومات أخرى ذات صلة
+      timestamp: new Date(), // الوقت الذي تم فيه الإبلاغ
+    });
+
+    Alert.alert('نجاح', 'تم إرسال تقريرك بنجاح.');
+
+    setModalVisible(false);
+    setReportText('');
+  } catch (error) {
+    console.error('خطأ في إرسال التقرير:', error);
+    Alert.alert('خطأ', 'حدث خطأ أثناء إرسال التقرير.');
+  }
+};
+*/
+
+
+const handleReportSubmit = async () => {
+  // التحقق من إدخال نص التقرير
+  if (!reportText.trim()) {
+    Alert.alert('تنبيه', 'يرجى إدخال نص التقرير.');
+    return;
+  }
+console.log(post.username)
+console.log(post.id)
+  // التأكد من صحة القيم قبل إرسالها
+  if (!post.id || !post.userId  || !post.username || !user.uid ) {
+    Alert.alert('خطأ', 'توجد بيانات مفقودة. يرجى التحقق من جميع الحقول.');
+    return;
+  }
+
+  try {
+    const reportRef = doc(db, 'reports', post.id);
+    
+    // البيانات التي نريد حفظها في وثيقة التقرير
+    const reportData = {
+      reportTexts: arrayUnion(reportText.trim()), // حفظ نصوص التقارير
+      reportedUsers: arrayUnion(user.uid), // حفظ UID للمستخدم الذي أبلغ
+      reportDetails: arrayUnion({
+        reportText: reportText.trim(), // نص الإبلاغ
+        reportedBy: user.uid || 'unknown', // UID الشخص الذي أبلغ
+        reportedByName: userName|| 'unknown', // اسم الشخص الذي أبلغ
+        postId: post.id || 'unknown', // معرف البوست
+        reportedTo: post.userId || 'unknown', // UID الشخص الذي تم الإبلاغ عنه
+        reportedToName: post.username || 'unknown', // اسم الشخص الذي تم الإبلاغ عنه
+        postTitle: post.title || 'not', // عنوان البوست
+         postImageUrl: post.imageUrl || 'unknown',
+        timestamp: new Date(), // توقيت التقرير
+      }),
+    };
+
+    // استخدام setDoc بدلاً من updateDoc لإنشاء الوثيقة إذا لم تكن موجودة
+    await setDoc(reportRef, reportData, { merge: true });
+
+    Alert.alert('نجاح', 'تم إرسال تقريرك بنجاح.');
+
+    setReportText(''); // تنظيف النص بعد الإرسال
+  } catch (error) {
+    console.error('خطأ في إرسال التقرير:', error);
+    Alert.alert('خطأ', 'حدث خطأ أثناء إرسال التقرير.');
+  }
+};
+
+
+
 
   
+
+  const confirmReport = () => {
+    setModalVisible(true);
+  };
+  
+ const ReportModal = ({ modalVisible, setModalVisible, reportText, setReportText, handleReportSubmit }) => (
+  <Modal
+  animationType="slide"
+  transparent={true}
+  visible={modalVisible}
+  onRequestClose={() => {
+    setReportText(''); // قم بإعادة تعيين نص التقرير عند إغلاق الـ Modal
+    setModalVisible(false);
+  }}
+>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.modalContainer}
+    >
+      <View style={styles.modalContentreport}>
+        <Text style={styles.modalTitle}>Add Report</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.reportInput}
+            placeholder="Enter report text here..."
+            value={reportText}
+            onChangeText={setReportText}
+            multiline
+            autoFocus
+          />
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.iconButtonReport}>
+              <Icon name="times" size={24} color="#F44336" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleReportSubmit} style={styles.iconButtonReport}>
+              <Icon name="send" size={24} color="#4CAF50" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  </Modal>
+);
+
 
   return (
     <View style={styles.container}>
@@ -246,13 +345,21 @@ const PostCard = ({ post, onPostDelete }) => {
           </TouchableOpacity>
 
           {user.uid !== post.userId && (
-            <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
-              <Image
-                source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
-                style={styles.reportIcon}
-              />
-            </TouchableOpacity>
-          )}
+      <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
+        <Image
+          source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
+          style={styles.reportIcon}
+        />
+      </TouchableOpacity>
+    )}
+    <ReportModal
+  modalVisible={modalVisible}
+  setModalVisible={setModalVisible}
+  reportText={reportText}
+  setReportText={setReportText}
+  handleReportSubmit={handleReportSubmit}
+/>
+
 
           {user.uid === post.userId && (
             <TouchableOpacity onLongPress={confirmDelete} style={styles.iconButton}>
@@ -381,7 +488,7 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
   iconText: {
     marginLeft: 5,
@@ -398,6 +505,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#DFD3C3',
     borderBottomWidth: 1,
   },
+
   commentUserImg: {
     width: 30,
     height: 30,
@@ -437,13 +545,75 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#F8EDE3',
+    backgroundColor: '#F8EDE3',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     padding: 20,
     height: '80%',
-    justifyContent: 'space-between', // Ensure the input area stays at the bottom
+    justifyContent: 'space-between',
   },
-  
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // خلفية مظللة
+  },
+  modalContentreport: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 15,
+    padding: 20,
+    width: '90%', // عرض أقل من الشاشة
+    maxWidth: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  inputContainer: {
+    width: '100%',
+    justifyContent: 'space-between', // لضبط الأزرار بشكل متباعد
+    flexDirection: 'row', // لجعل الأزرار بجانب بعضها أفقياً
+  },
+  reportInput: {
+    borderColor: '#8D493A',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: '#FFF',
+    color: '#333',
+    fontSize: 16,
+    textAlignVertical: 'top', // لضبط النص في الأعلى
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    height: 100,
+    width: '100%', // توسيع العرض ليكون بعرض الحاوية بالكامل
+  },
+  inputContainer: {
+    width: '100%',
+    alignItems: 'center', // لجعل الحقل والأزرار في المنتصف
+    flexDirection: 'column', // ترتيب عمودي للعناصر
+  },
+  buttonsContainer: {
+    flexDirection: 'row', 
+    justifyContent: 'space-between', // !توزيع الأزرار بالتساوي
+    marginTop: 10, //! إضافة مسافة فوق الأزرار
+    width: '99%', //! توسيع عرض الأزرار لتتناسب مع الحاوية
+  },
+  iconButtoniconButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1, // لضبط حجم الأزرار لتكون متساوية
+  },
 });
 
 export default PostCard;

@@ -1,11 +1,25 @@
 // src/screen/Admin/AdminHome.js
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from '@expo/vector-icons';
 
 const AdminHome = ({ navigation }) => {
-  const { user, userName, userType, userImgUrl } = useAuth();
+  const { user, userName } = useAuth();
+  const { signOutUser } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }], // إعادة تعيين التنقل لتوجيه المستخدم إلى شاشة تسجيل الدخول
+      });
+    } catch (error) {
+      console.error('Log Out Error: ', error);
+      Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,13 +42,23 @@ const AdminHome = ({ navigation }) => {
           <Text style={styles.buttonText}>View Users Count</Text>
         </TouchableOpacity>
       </View>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => navigation.navigate("Products")}
+          onPress={() => navigation.navigate("Report")}
         >
-          <Ionicons name="cart-outline" size={24} color="#ffffff" style={styles.icon} />
-          <Text style={styles.buttonText}>Add Products</Text>
+          <Ionicons name="alert-circle-outline" size={24} color="#ffffff" style={styles.icon} />
+          <Text style={styles.buttonText}>reports</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={styles.signOutButton}
+          onPress={handleSignOut}
+        >
+          <Ionicons name="log-out-outline" size={24} color="#ffffff" style={styles.icon} />
+          <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -47,7 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#f0f0f5", // لون خلفية أفتح يناسب عالم الأزياء
+    backgroundColor: "#f0f0f5",
   },
   title: {
     fontSize: 28,
@@ -60,7 +84,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   button: {
-    backgroundColor: "#ff6f61", // لون عصري يتناسب مع تصميم الأزياء
+    backgroundColor: "#ff6f61",
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -76,6 +100,21 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
+  },
+  signOutButton: {
+    backgroundColor: "#dc3545",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: "center",
+    elevation: 3,
+  },
+  signOutButtonText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "600",
+    marginLeft: 10,
   },
 });
 
