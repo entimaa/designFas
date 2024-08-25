@@ -103,6 +103,14 @@ export const AuthProvider = ({ children }) => {
         isBlocked: false
         
       };
+
+      //
+      if (type === 'Designer') {
+        userData.profileViews = 0;
+      }
+      //
+
+      
       await setDoc(doc(db, collectionPath, userId), userData);
       if (image) {
         await uploadUserProfileImage(userId, image);

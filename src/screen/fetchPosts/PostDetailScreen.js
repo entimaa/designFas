@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc,setDoc } from 'firebase/firestore';
 import { db } from '../../../data/DataFirebase'; // Adjust the import path as necessary
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -9,7 +9,7 @@ import Modal from 'react-native-modal';
 
 const PostDetailsScreen = () => {
   const route = useRoute();
-  const { postId } = route.params;
+  const { postId,username, userId,postImageUrl} = route.params;
   const [post, setPost] = useState(null);
   const [heartColor, setHeartColor] = useState('#000');
   const [commentColor, setCommentColor] = useState('#000');
@@ -22,8 +22,19 @@ const PostDetailsScreen = () => {
   const [reportedByUser, setReportedByUser] = useState(false);
   const navigation = useNavigation();
   const { user, userName, userImgUrl } = useAuth();
+  //
+
+  console.log(username);
+  console.log(userId);
+  console.log(postId);
+  console.log(user.uid)
+  console.log(postImageUrl)
+  const [modalVisible, setModalVisible] = useState(false);
+  const [reportText, setReportText] = useState('');
 
   useEffect(() => {
+
+
     const postRef = doc(db, 'postsDesigner', postId);
     const unsubscribe = onSnapshot(postRef, (doc) => {
       const postData = doc.data();
@@ -40,6 +51,7 @@ const PostDetailsScreen = () => {
     return () => unsubscribe();
   }, [postId, user.uid]);
 
+  
   const toggleHeartColor = async () => {
     const postRef = doc(db, 'postsDesigner', postId);
     try {
@@ -165,46 +177,102 @@ const PostDetailsScreen = () => {
     }
   };
 
-  const handleReportPost = async () => {
-    if (post) {
-      const postRef = doc(db, 'postsDesigner', postId);
-      try {
-        if (reportedByUser) {
-          Alert.alert('Already Reported', 'You have already reported this post.');
-          return;
-        }
-
-        await updateDoc(postRef, {
-          reports: arrayUnion(user.uid),
-          reportCount: reportCount + 1,
-        });
-
-        if (reportCount + 1 >= 4) {
-          await deleteDoc(postRef);
-          Alert.alert('Post Deleted', 'This post has been deleted due to multiple reports.');
-          navigation.goBack();
-        } else {
-          Alert.alert('Reported', 'Thank you for reporting. The post will be reviewed.');
-        }
-      } catch (error) {
-        console.error('Error reporting post:', error);
-        Alert.alert('Error', 'Failed to report post.');
-      }
+  const handleReportSubmit = async () => {
+    // التحقق من إدخال نص التقرير
+    if (!reportText.trim()) {
+      Alert.alert('تنبيه', 'يرجى إدخال نص التقرير.');
+      return;
+    }
+ 
+    // التأكد من صحة القيم قبل إرسالها
+    if (!postId || !userId  || !username || !user.uid ) {
+      Alert.alert('خطأ', 'توجد بيانات مفقودة. يرجى التحقق من جميع الحقول.');
+      return;
+    }
+  
+    try {
+      const reportRef = doc(db, 'reports', postId);
+      
+      // *البيانات التي نريد حفظها في وثيقة التقرير
+      const reportData = {
+        reportTexts: arrayUnion(reportText.trim()), //! حفظ نصوص التقارير
+        reportedUsers: arrayUnion(user.uid), //! حفظ UID للمستخدم الذي أبلغ
+        reportDetails: arrayUnion({
+          reportText: reportText.trim(), //! نص الإبلاغ
+          reportedBy: user.uid || 'unknown', //! UID الشخص الذي أبلغ
+          reportedByName: userName|| 'unknown', //! اسم الشخص الذي أبلغ
+          postId: postId|| 'unknown', // !معرف البوست
+          reportedTo: username|| 'unknown', // !UID الشخص الذي تم الإبلاغ عنه
+          reportedToName: userId| 'unknown', // !اسم الشخص الذي تم الإبلاغ عنه
+          postTitle: post.title || 'not', // !عنوان البوست
+           postImageUrl: postImageUrl|| 'unknown',
+          timestamp: new Date(), // !توقيت التقرير
+        }),
+      };
+  
+      // استخدام setDoc بدلاً من updateDoc لإنشاء الوثيقة إذا لم تكن موجودة
+      await setDoc(reportRef, reportData, { merge: true });
+  
+      Alert.alert('نجاح', 'تم إرسال تقريرك بنجاح.');
+  
+      setReportText(''); // تنظيف النص بعد الإرسال
+    } catch (error) {
+      console.error('خطأ في إرسال التقرير:', error);
+      Alert.alert('خطأ', 'حدث خطأ أثناء إرسال التقرير.');
     }
   };
+  
+  
+  
+  
+    
+  
+    const confirmReport = () => {
+      setModalVisible(true);
+    };
+    
+   const ReportModal = ({ modalVisible, setModalVisible, reportText, setReportText, handleReportSubmit }) => (
+    <Modal
+    animationType="slide"
+    transparent={true}
+    visible={modalVisible}
+    onRequestClose={() => {
+      setReportText(''); // قم بإعادة تعيين نص التقرير عند إغلاق الـ Modal
+      setModalVisible(false);
+    }}
+  >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalContainer}
+      >
+        <View style={styles.modalContentreport}>
+          <Text style={styles.modalTitle}>Add Report</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.reportInput}
+              placeholder="Enter report text here..."
+              value={reportText}
+              onChangeText={setReportText}
+              multiline
+              autoFocus
+            />
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.iconButtonReport}>
+                <Icon name="times" size={24} color="#F44336" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleReportSubmit} style={styles.iconButtonReport}>
+                <Icon name="send" size={24} color="#4CAF50" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+  
+  
 
-  const confirmReport = () => {
-    if (user.uid !== post?.userId) { // Only show report button if the user is not the post owner
-      Alert.alert(
-        'Report Post',
-        'Are you sure you want to report this post?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Report', style: 'destructive', onPress: handleReportPost }
-        ]
-      );
-    }
-  };
+ 
 
   if (!post) {
     return (
@@ -265,6 +333,14 @@ const PostDetailsScreen = () => {
                  <Text style={styles.iconText}>Report</Text>
                </TouchableOpacity>
              )}
+
+<ReportModal
+  modalVisible={modalVisible}
+  setModalVisible={setModalVisible}
+  reportText={reportText}
+  setReportText={setReportText}
+  handleReportSubmit={handleReportSubmit}
+/>
            </View>
          </View>
 
@@ -322,134 +398,197 @@ const PostDetailsScreen = () => {
    };
 
    const styles = StyleSheet.create({
-     container: {
-       backgroundColor: '#D0B8A8',
-       flex: 1,
-       padding: 10,
-     },
-     card: {
-       backgroundColor: '#F8EDE3',
-       borderRadius: 8,
-       padding: 10,
-       marginVertical: 10,
-       shadowColor: '#000',
-       shadowOffset: { width: 0, height: 2 },
-       shadowOpacity: 0.2,
-       shadowRadius: 4,
-       elevation: 2,
-     },
-     userInfo: {
-       flexDirection: 'row',
-       alignItems: 'center',
-       marginBottom: 10,
-     },
-     userImg: {
-       width: 40,
-       height: 40,
-       borderRadius: 20,
-       marginRight: 10,
-     },
-     userText: {
-       flex: 1,
-     },
-     userName: {
-       fontWeight: 'bold',
-       fontSize: 16,
-     },
-     postTime: {
-       color: '#888',
-       fontSize: 12,
-     },
-     postTitle: {
-       fontWeight: 'bold',
-       fontSize: 18,
-       marginBottom: 5,
-     },
-     postImage: {
-       width: '100%',
-       height: 400,
-       borderRadius: 8,
-       marginVertical: 10,
-       resizeMode: 'cover',
-     },
-     postContent: {
-       fontSize: 16,
-       marginTop: -19,
-     },
-     separator: {
-       height: 1,
-       backgroundColor: '#D0B8A8',
-       marginVertical: 4,
-     },
-     iconContainer: {
-       flexDirection: 'row',
-       justifyContent: 'space-between',
-       marginTop: 10,
-     },
-     iconButton: {
-       flexDirection: 'row',
-       alignItems: 'center',
-     },
-     iconText: {
-       marginLeft: 5,
-       fontSize: 14,
-     },
-     modal: {
-       justifyContent: 'flex-end',
-       margin: 0,
-     },
-     modalContent: {
-       backgroundColor: '#F8EDE3',
-       borderTopLeftRadius: 10,
-       borderTopRightRadius: 10,
-       padding: 10,
-       height: '80%',
-     },
-     commentInputContainer: {
-       flexDirection: 'row',
-       alignItems: 'center',
-       paddingTop: 1,
-     },
-     commentInput: {
-       flex: 1,
-       
-       borderColor: '#8D493A',
-       borderWidth: 1,
-       borderRadius: 7,
-       padding: 10,
-       marginRight: 10,
-     },
-     commentButton: {
-       padding: 5,
-     },
-     reportIcon: {
-       width: 20,
-       height: 20,
-     },
-     commentContainer: {
-       flexDirection: 'row',
-       alignItems: 'center',
-       paddingVertical: 5,
-       borderBottomColor: '#DFD3C3',
-       borderBottomWidth: 1,
-     },
-     commentUserImg: {
-       width: 30,
-       height: 30,
-       borderRadius: 15,
-       marginRight: 10,
-     },
-     commentTextContainer: {
-       flex: 1,
-     },
-     commentUsername: {
-       fontWeight: 'bold',
-       fontSize: 14,
-     },
-     commentText: {
-       fontSize: 14,
-     },
-   });
+    container: {
+      backgroundColor: '#D0B8A8',
+      flex: 1,
+      padding: 10,
+    },
+    card: {
+      backgroundColor: '#F8EDE3',
+      borderRadius: 8,
+      padding: 10,
+      marginVertical: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    userInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    userImg: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 10,
+    },
+    userText: {
+      flex: 1,
+    },
+    userName: {
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    postTime: {
+      color: '#888',
+      fontSize: 12,
+    },
+    postTitle: {
+      fontSize: 16,
+      marginBottom: 5,
+    },
+    postImage: {
+      width: '100%',
+      height: 450,
+      borderRadius: 8,
+      marginVertical: 10,
+      resizeMode: 'cover', // Or 'contain' depending on your preference
+    },
+    postContent: {
+      fontSize: 16,
+      marginBottom: 10,
+    },
+    separator: {
+      height: 1,
+      backgroundColor: '#D0B8A8',
+      marginVertical: 10,
+    },
+    iconContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    iconButton: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+    },
+    iconText: {
+      marginLeft: 5,
+      fontSize: 14,
+    },
+    reportIcon: {
+      width: 20,
+      height: 20,
+    },
+    commentContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 5,
+      borderBottomColor: '#DFD3C3',
+      borderBottomWidth: 1,
+    },
+  
+    commentUserImg: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      marginRight: 10,
+    },
+    commentTextContainer: {
+      flex: 1,
+    },
+    commentUsername: {
+      fontWeight: 'bold',
+      fontSize: 14,
+    },
+    commentText: {
+      fontSize: 14,
+    },
+    commentInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    commentInput: {
+      flex: 1,
+      borderColor: '#8D493A',
+      borderWidth: 1,
+      borderRadius: 7,
+      padding: 10,
+      marginRight: 10,
+    },
+    commentButton: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modal: {
+      justifyContent: 'flex-end',
+      margin: 0,
+    },
+    modalContent: {
+      backgroundColor: '#F8EDE3',
+      backgroundColor: '#F8EDE3',
+      borderTopLeftRadius: 10,
+      borderTopRightRadius: 10,
+      padding: 20,
+      height: '80%',
+      justifyContent: 'space-between',
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)', // خلفية مظللة
+    },
+    modalContentreport: {
+      backgroundColor: '#F8F8F8',
+      borderRadius: 15,
+      padding: 20,
+      width: '90%', // عرض أقل من الشاشة
+      maxWidth: 500,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 5 },
+      shadowOpacity: 0.3,
+      shadowRadius: 10,
+      elevation: 10,
+      alignItems: 'center',
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      color: '#333',
+    },
+    inputContainer: {
+      width: '100%',
+      justifyContent: 'space-between', // لضبط الأزرار بشكل متباعد
+      flexDirection: 'row', // لجعل الأزرار بجانب بعضها أفقياً
+    },
+    reportInput: {
+      borderColor: '#8D493A',
+      borderWidth: 1,
+      borderRadius: 10,
+      padding: 10,
+      backgroundColor: '#FFF',
+      color: '#333',
+      fontSize: 16,
+      textAlignVertical: 'top', // لضبط النص في الأعلى
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      height: 100,
+      width: '100%', // توسيع العرض ليكون بعرض الحاوية بالكامل
+    },
+    inputContainer: {
+      width: '100%',
+      alignItems: 'center', // لجعل الحقل والأزرار في المنتصف
+      flexDirection: 'column', // ترتيب عمودي للعناصر
+    },
+    buttonsContainer: {
+      flexDirection: 'row', 
+      justifyContent: 'space-between', // !توزيع الأزرار بالتساوي
+      marginTop: 10, //! إضافة مسافة فوق الأزرار
+      width: '99%', //! توسيع عرض الأزرار لتتناسب مع الحاوية
+    },
+    iconButtoniconButton: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      flex: 1, // لضبط حجم الأزرار لتكون متساوية
+    },
+  });
 
    export default PostDetailsScreen;
 

@@ -37,7 +37,7 @@ const AppNavigation = () => {
         />
       ) : (
         <Stack.Screen
-          name="MainStack"
+          name="Home"
           component={MainStack}
           options={{ headerShown: false }}
         />

@@ -12,6 +12,8 @@ const { width } = Dimensions.get('window');
 const imageSize = (width - 6) / 3; // Adjusted for margin between images
 
 const ProfileScreen = ({ route }) => {
+
+ 
   const navigation = useNavigation();
   const { user, userName, userType, userImgUrl } = useAuth();
   const [posts, setPosts] = useState([]);
@@ -51,7 +53,27 @@ const handleGoBack = () => {
 };
 
 
+//////////////////
 
+const updateProfileViews = async (visitorId, profileOwnerId) => {
+  // Increase profileViews only if the visitor is not the profile owner
+  if (visitorId !== profileOwnerId) {
+    console.log("visited +1 ")
+    console.log(visitorId)           //!  اليوزر نفسه  
+    console.log(profileOwnerId)      //*الذي تم زيارته
+    try {
+      const userRef = doc(db, "userDesigner", profileOwnerId);
+      await updateDoc(userRef, {
+        profileViews: increment(1),
+      });
+    } catch (error) {
+      console.error('Error updating profile views: ', error);
+    }
+  }
+};
+
+
+/////////////////////
 
 const fetchProfileData = useCallback(async () => {
   setLoading(true);
@@ -65,7 +87,7 @@ const fetchProfileData = useCallback(async () => {
 
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      const fetchedProfileImageUrl = userData.userImgUrl || null;// TODO-->  here oif the user dont have pic profile use anothe avtar and not use pic the user in account 
+      const fetchedProfileImageUrl = userData.userImgUrl || null;
       setProfileImageUrl(fetchedProfileImageUrl);
       setProfileUserName(userData.name || route.params?.username || userName);
       setProfileUserType(userData.type || userType);
@@ -74,6 +96,8 @@ const fetchProfileData = useCallback(async () => {
       setCity(userData.city || '');
       setBio(userData.bio || '');
 
+
+     
       const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
       setFollowersCount(followersSnap.size);
       setFollowersList(followersSnap.docs.map(doc => doc.data()));
@@ -90,6 +114,9 @@ const fetchProfileData = useCallback(async () => {
         ...docSnap.data(),
       }));
       setPosts(postsData);
+
+      // Update profile views count
+      await updateProfileViews(user.uid, userId);
     } else {
       console.error("User not found");
     }
@@ -104,6 +131,7 @@ const fetchProfileData = useCallback(async () => {
     setRefreshing(false);
   }
 }, [user, route.params]);
+
 
 
   useEffect(() => {
@@ -205,19 +233,21 @@ const fetchProfileData = useCallback(async () => {
   };
 
   // إضافة دالة جديدة في ProfileScreen
-const handlePostPress = (postId) => {
-  navigation.navigate('PostDetailsScreen', { postId });
-};
+  const handlePostPress = (postId, username, userId, postImageUrl) => {
+    navigation.navigate('PostDetailsScreen', { postId, username, userId, postImageUrl });
+  };
+  
 
 
 // تحديث renderPost لتضمين onPress
 const renderPost = ({ item }) => (
-  <TouchableOpacity onPress={() => handlePostPress(item.id)}>
+  <TouchableOpacity onPress={() => handlePostPress(item.id, profileUserName, route.params.userId, item.imageUrl)}>
     <View style={styles.postImageContainer}>
       <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
     </View>
   </TouchableOpacity>
 );
+
 
 
   return (
