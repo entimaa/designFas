@@ -18,6 +18,8 @@ import ActionSheet from 'react-native-actionsheet';
 import { auth } from "../../../data/DataFirebase";
 import { signOut } from 'firebase/auth'; // تأكد من صحة المسار بناءً على مكان وجوده
 
+import ChartScreen from "../ChartScreen";
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -259,6 +261,27 @@ const MainStack = () => {
           ),
         }} 
       />
+<Stack.Screen 
+  name="ChartScreen" 
+  component={ChartScreen} 
+  options={{
+    title: 'Chart Screen',
+    headerStyle: {
+      backgroundColor: '#6E42A3', // اللون البنفسجي الغامق
+    },
+    headerTintColor: '#fff', // لون النص والأيقونات في شريط التنقل
+    headerTitleStyle: {
+      //fontWeight: 'bold', // تحديد وزن الخط
+    },
+    headerLeft: () => (
+      <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+        <Icon name="chevron-left" size={25} color="#fff" />
+      </TouchableOpacity>
+    ),
+  }} 
+/>
+
+
       <Stack.Screen 
         name="PostDetailsScreen" 
         component={PostDetailScreen} 

@@ -34,9 +34,11 @@ const ProfileScreen = ({ route }) => {
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
+  const [profileViews, setProfileViews] = useState(0); 
   const [slopeColor, setSlopeColor] = useState('#D0B8A8'); // Default slope color
 
   const isCurrentUser = !route.params || route.params.userId === user.uid;
+  const UserType =userType;
 /* 
 !if the user logs in a pje profile  , the return will be to the paje from witch he logged in 
 ! i use fromChatList for ur..
@@ -58,21 +60,31 @@ const handleGoBack = () => {
 const updateProfileViews = async (visitorId, profileOwnerId) => {
   // Increase profileViews only if the visitor is not the profile owner
   if (visitorId !== profileOwnerId) {
-    console.log("visited +1 ")
-    console.log(visitorId)           //!  اليوزر نفسه  
-    console.log(profileOwnerId)      //*الذي تم زيارته
+    console.log("visited +1 ");
+    console.log(visitorId);           // ! اليوزر نفسه  
+    console.log(profileOwnerId);      // *الذي تم زيارته
     try {
       const userRef = doc(db, "userDesigner", profileOwnerId);
-      await updateDoc(userRef, {
+      const visitData = {
+        visitorId: visitorId,
+        timestamp: new Date(), // تاريخ ووقت الزيارة
+      };
+
+      // Retrieve the current data
+      const userDoc = await getDoc(userRef);
+      const currentData = userDoc.exists() ? userDoc.data() : {};
+
+      // Update the document
+      await setDoc(userRef, {
         profileViews: increment(1),
-      });
+        visitDates: [...(currentData.visitDates || []), visitData],
+      }, { merge: true });
+      
     } catch (error) {
       console.error('Error updating profile views: ', error);
     }
   }
 };
-
-
 /////////////////////
 
 const fetchProfileData = useCallback(async () => {
@@ -95,9 +107,10 @@ const fetchProfileData = useCallback(async () => {
       setCountry(userData.country || '');
       setCity(userData.city || '');
       setBio(userData.bio || '');
-
-
-     
+    setProfileViews(userData.profileViews || 0); 
+     // console.log(userData.profileViews )
+      
+     console.log()
       const followersSnap = await getDocs(collection(db, "followers", userId, "userFollowers"));
       setFollowersCount(followersSnap.size);
       setFollowersList(followersSnap.docs.map(doc => doc.data()));
@@ -212,7 +225,7 @@ const fetchProfileData = useCallback(async () => {
 };
 
   
-  
+  console.log(userType)
   
 
   const toggleFollowersModal = () => {
@@ -233,20 +246,31 @@ const fetchProfileData = useCallback(async () => {
   };
 
   // إضافة دالة جديدة في ProfileScreen
-  const handlePostPress = (postId, username, userId, postImageUrl) => {
-    navigation.navigate('PostDetailsScreen', { postId, username, userId, postImageUrl });
-  };
+const handlePostPress = (postId,username,userId,postImageUrl) => {
+  navigation.navigate('PostDetailsScreen', { postId,username,userId,postImageUrl });
   
+};
+
 
 
 // تحديث renderPost لتضمين onPress
 const renderPost = ({ item }) => (
-  <TouchableOpacity onPress={() => handlePostPress(item.id, profileUserName, route.params.userId, item.imageUrl)}>
+  <TouchableOpacity onPress={() => handlePostPress(item.id, profileUserName, route.params.userId,item.imageUrl)}>
     <View style={styles.postImageContainer}>
       <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
     </View>
   </TouchableOpacity>
 );
+
+
+//////! chart screen router :
+
+
+
+//
+
+
+
 
 
 
@@ -259,6 +283,11 @@ const renderPost = ({ item }) => (
               <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
                 <Icon name="paint-brush" size={20} color="#fff" />
               </TouchableOpacity>
+              {isCurrentUser && UserType === 'Designer' && (
+            <TouchableOpacity style={styles.chart} onPress={() => navigation.navigate('ChartScreen', { userId: route.params.userId, username: profileUserName, userImgUrl: profileImageUrl, profileViews: profileViews })}>
+              <Icon name="bar-chart" size={22} color="#fff" />
+            </TouchableOpacity>
+          )}
               <View style={styles.profileImageContainer}>
               <Image
                        style={styles.profileImage}
@@ -458,8 +487,15 @@ const styles = StyleSheet.create({
   },
   changeColorButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 1,
+    left:1,
+    padding: 10,
+  },
+  chart : {
+    position: 'absolute',
+    top: 1,
+   
+    left: 40,
     padding: 10,
   },
   profileImageContainer: {
