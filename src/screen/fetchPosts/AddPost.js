@@ -146,6 +146,7 @@ const AddPostComponent = ({ toggleModal }) => {
                 username: userName,
                 timestamp: new Date().toISOString(),
                 likes: 0,
+                DisLike:0,
                 comments: [],
                 userimg: userImgUrl,
                 category: category,

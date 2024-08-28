@@ -9,18 +9,22 @@ import Modal from 'react-native-modal';
 
 const PostCard = ({ post, onPostDelete }) => {
   const [heartColor, setHeartColor] = useState('#000');
+  const [dislikeColor, setDislikeColor] = useState('#000');
   const [commentColor, setCommentColor] = useState('#000');
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState(post.comments || []);
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [dislikesCount, setDislikesCount] = useState(post.dislikesCount || 0);
   const [likedByUser, setLikedByUser] = useState(false);
+  const [dislikedByUser, setDislikedByUser] = useState(false);
   const [reportCount, setReportCount] = useState(post.reportCount || 0);
   const [reportedByUser, setReportedByUser] = useState(false);
   const [reportComment, setReportComment] = useState('');
   // ? report commett***
   const [modalVisible, setModalVisible] = useState(false);
 const [reportText, setReportText] = useState('');
+const [isInputVisible, setIsInputVisible] = useState(false);
 
   const navigation = useNavigation();
   const { user, userName, userImgUrl } = useAuth();
@@ -57,6 +61,7 @@ const [reportText, setReportText] = useState('');
     const postRef = doc(db, 'postsDesigner', post.id);
     try {
       if (likedByUser) {
+        // Remove like
         await updateDoc(postRef, {
           likes: arrayRemove(user.uid),
           likesCount: likesCount - 1,
@@ -65,19 +70,82 @@ const [reportText, setReportText] = useState('');
         setLikesCount(likesCount - 1);
         setHeartColor('#000');
       } else {
-        await updateDoc(postRef, {
-          likes: arrayUnion(user.uid),
-          likesCount: likesCount + 1,
-        });
-        setLikedByUser(true);
-        setLikesCount(likesCount + 1);
-        setHeartColor('red');
+        if (dislikedByUser) {
+          // Remove dislike and add like
+          await updateDoc(postRef, {
+            dislikes: arrayRemove(user.uid),
+            dislikesCount: dislikesCount - 1,
+            likes: arrayUnion(user.uid),
+            likesCount: likesCount + 1,
+          });
+          setDislikedByUser(false);
+          setDislikesCount(dislikesCount - 1);
+          setLikedByUser(true);
+          setLikesCount(likesCount + 1);
+          setHeartColor('red');
+          setDislikeColor('#000');
+        } else {
+          // Add like
+          await updateDoc(postRef, {
+            likes: arrayUnion(user.uid),
+            likesCount: likesCount + 1,
+          });
+          setLikedByUser(true);
+          setLikesCount(likesCount + 1);
+          setHeartColor('red');
+        }
       }
     } catch (error) {
       console.error('Error updating likes:', error);
       Alert.alert('Error', 'Failed to update likes.');
     }
   };
+  
+  const toggleDislikeColor = async () => {
+    const postRef = doc(db, 'postsDesigner', post.id);
+  
+    try {
+      if (dislikedByUser) {
+        // Remove dislike
+        await updateDoc(postRef, {
+          dislikes: arrayRemove(user.uid),
+          dislikesCount: dislikesCount - 1,
+        });
+        setDislikedByUser(false);
+        setDislikesCount(dislikesCount - 1);
+        setDislikeColor('#000');
+      } else {
+        if (likedByUser) {
+          // Remove like and add dislike
+          await updateDoc(postRef, {
+            likes: arrayRemove(user.uid),
+            likesCount: likesCount - 1,
+            dislikes: arrayUnion(user.uid),
+            dislikesCount: dislikesCount + 1,
+          });
+          setLikedByUser(false);
+          setLikesCount(likesCount - 1);
+          setDislikedByUser(true);
+          setDislikesCount(dislikesCount + 1);
+          setHeartColor('#000');
+          setDislikeColor('blue');
+        } else {
+          // Add dislike
+          await updateDoc(postRef, {
+            dislikes: arrayUnion(user.uid),
+            dislikesCount: dislikesCount + 1,
+          });
+          setDislikedByUser(true);
+          setDislikesCount(dislikesCount + 1);
+          setDislikeColor('blue');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating dislikes:', error);
+      Alert.alert('Error', 'Failed to update dislikes.');
+    }
+  };
+  
 
   const toggleCommentColor = () => {
     setCommentColor((prevColor) => (prevColor === '#000' ? '#000' : '#000'));
@@ -216,77 +284,70 @@ const handleReportSubmit = async () => {
 
 
 const handleReportSubmit = async () => {
-  // التحقق من إدخال نص التقرير
   if (!reportText.trim()) {
-    Alert.alert('تنبيه', 'يرجى إدخال نص التقرير.');
+    Alert.alert('Alert', 'Please enter the report text.');
     return;
   }
-console.log(post.username)
-console.log(post.id)
-  // التأكد من صحة القيم قبل إرسالها
-  if (!post.id || !post.userId  || !post.username || !user.uid ) {
-    Alert.alert('خطأ', 'توجد بيانات مفقودة. يرجى التحقق من جميع الحقول.');
+
+  if (!post.id || !post.userId || !post.username || !user.uid) {
+    Alert.alert('Error', 'Missing data. Please check all fields.');
     return;
   }
 
   try {
     const reportRef = doc(db, 'reports', post.id);
-    
-    // البيانات التي نريد حفظها في وثيقة التقرير
     const reportData = {
-      reportTexts: arrayUnion(reportText.trim()), // حفظ نصوص التقارير
-      reportedUsers: arrayUnion(user.uid), // حفظ UID للمستخدم الذي أبلغ
+      reportTexts: arrayUnion(reportText.trim()),
+      reportedUsers: arrayUnion(user.uid),
       reportDetails: arrayUnion({
-        reportText: reportText.trim(), // نص الإبلاغ
-        reportedBy: user.uid || 'unknown', // UID الشخص الذي أبلغ
-        reportedByName: userName|| 'unknown', // اسم الشخص الذي أبلغ
-        postId: post.id || 'unknown', // معرف البوست
-        reportedTo: post.userId || 'unknown', // UID الشخص الذي تم الإبلاغ عنه
-        reportedToName: post.username || 'unknown', // اسم الشخص الذي تم الإبلاغ عنه
-        postTitle: post.title || 'not', // عنوان البوست
-         postImageUrl: post.imageUrl || 'unknown',
-        timestamp: new Date(), // توقيت التقرير
+        reportText: reportText.trim(),
+        reportedBy: user.uid || 'unknown',
+        reportedByName: userName || 'unknown',
+        postId: post.id || 'unknown',
+        reportedTo: post.userId || 'unknown',
+        reportedToName: post.username || 'unknown',
+        postTitle: post.title || 'not available',
+        postImageUrl: post.imageUrl || 'unknown',
+        timestamp: new Date(),
       }),
     };
 
-    // استخدام setDoc بدلاً من updateDoc لإنشاء الوثيقة إذا لم تكن موجودة
     await setDoc(reportRef, reportData, { merge: true });
 
-    Alert.alert('نجاح', 'تم إرسال تقريرك بنجاح.');
-
-    setReportText(''); // تنظيف النص بعد الإرسال
+    Alert.alert('Success', 'Your report has been submitted successfully.');
+    setReportText('');
   } catch (error) {
-    console.error('خطأ في إرسال التقرير:', error);
-    Alert.alert('خطأ', 'حدث خطأ أثناء إرسال التقرير.');
+    console.error('Error submitting report:', error);
+    Alert.alert('Error', 'An error occurred while submitting the report.');
   }
 };
 
 
 
-
-  
-
   const confirmReport = () => {
     setModalVisible(true);
   };
   
- const ReportModal = ({ modalVisible, setModalVisible, reportText, setReportText, handleReportSubmit }) => (
-  <Modal
-  animationType="slide"
-  transparent={true}
-  visible={modalVisible}
-  onRequestClose={() => {
-    setReportText(''); // قم بإعادة تعيين نص التقرير عند إغلاق الـ Modal
-    setModalVisible(false);
-  }}
->
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.modalContainer}
+  const ReportModal = ({ modalVisible, setModalVisible, reportText, setReportText, handleReportSubmit }) => (
+    <Modal
+      isVisible={modalVisible}
+      onBackdropPress={() => {
+        setReportText(''); 
+        setModalVisible(false);
+      }}
+      onSwipeComplete={() => {
+        setReportText(''); 
+        setModalVisible(false);
+      }}
+      swipeDirection="down"
+      style={styles.modal}
     >
-      <View style={styles.modalContentreport}>
-        <Text style={styles.modalTitle}>Add Report</Text>
-        <View style={styles.inputContainer}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalContainer}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Add Report</Text>
           <TextInput
             style={styles.reportInput}
             placeholder="Enter report text here..."
@@ -304,11 +365,10 @@ console.log(post.id)
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </KeyboardAvoidingView>
-  </Modal>
-);
-
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+  
 
   return (
     <View style={styles.container}>
@@ -339,11 +399,17 @@ console.log(post.id)
             <Text style={styles.iconText}>{likesCount} likes</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity onPress={toggleDislikeColor} style={styles.iconButton}>
+        <Icon name={dislikedByUser ? "thumbs-down" : "thumbs-o-down"} size={20} color={dislikeColor} />
+        <Text style={styles.iconText}>{dislikesCount}</Text>
+      </TouchableOpacity>
+
           <TouchableOpacity onPress={() => setShowCommentsModal(true)} style={styles.iconButton}>
             <Icon name={showCommentsModal ? 'comment' : 'comment-o'} size={20} color={commentColor} />
             <Text style={styles.iconText}>{comments.length} comments</Text>
           </TouchableOpacity>
 
+<View>
           {user.uid !== post.userId && (
       <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
         <Image
@@ -351,14 +417,18 @@ console.log(post.id)
           style={styles.reportIcon}
         />
       </TouchableOpacity>
+      
     )}
-    <ReportModal
+     <ReportModal
   modalVisible={modalVisible}
   setModalVisible={setModalVisible}
   reportText={reportText}
   setReportText={setReportText}
   handleReportSubmit={handleReportSubmit}
 />
+
+</View>
+   
 
 
           {user.uid === post.userId && (

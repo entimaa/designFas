@@ -23,10 +23,11 @@ const AdminStack = () => {
         options={{ title: 'Add category' }}
       />
       <Stack.Screen
-        name="UsersCount"
-        component={UsersCountScreen}
-        options={{ title: 'عدد المستخدمين' }}
-      />
+  name="UsersCount"
+  component={UsersCountScreen}
+  options={{ headerShown: false }} // Hide the header, including the title
+/>
+
       <Stack.Screen
         name="Report"
         component={Report}

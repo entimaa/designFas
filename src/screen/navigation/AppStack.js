@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Image, TouchableOpacity, Alert } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from "../../context/AuthContext";
@@ -15,16 +15,15 @@ import Chat from '../chat/Chat';
 import CommentsScreen from "../fetchPosts/CommentScreen";
 import PostDetailScreen from "../fetchPosts/PostDetailScreen";
 import ActionSheet from 'react-native-actionsheet';
-import { auth } from "../../../data/DataFirebase";
-import { signOut } from 'firebase/auth'; // تأكد من صحة المسار بناءً على مكان وجوده
-
 import ChartScreen from "../ChartScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-{
-/* const { signOutUser } = useAuth();
+const ProfileStack = () => {
+  const { user, signOutUser } = useAuth();
+  const navigation = useNavigation();
+  const actionSheetRef = useRef();
 
   const handleSignOut = async () => {
     try {
@@ -38,13 +37,6 @@ const Stack = createStackNavigator();
       Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
     }
   };
- */
-}
-
-const ProfileStack = () => {
-  const { user, signOutUser } = useAuth();
-  const navigation = useNavigation();
-  const actionSheetRef = useRef();
 
   const handleOptionActionSheet = async (index) => {
     if (index === 0) {
@@ -55,18 +47,14 @@ const ProfileStack = () => {
       ]);
     } else if (index === 1) {
       // Show loading indicator
-      Alert.alert("Logging Out", [{ text: "OK" }]);
 
       try {
-        await signOutUser(); // Use the signOutUser function from AuthContext
-        await signOutUser();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }], // إعادة تعيين التنقل لتوجيه المستخدم إلى شاشة تسجيل الدخول
-      }); // Navigate to Login screen
+      Alert.alert("Logging Out", "Please wait while we log you out.");
+
+        await handleSignOut();
       } catch (error) {
         console.error('Log Out Error: ', error);
-       // Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
+        Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
       }
     }
   };
@@ -116,8 +104,6 @@ const ProfileStack = () => {
   );
 };
 
-
-
 const MessageStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="ChatList" component={ChatList} options={{ title: 'Chat List' }} />
@@ -130,6 +116,7 @@ const MessageStack = () => (
 const HomeTabs = () => {
   const navigation = useNavigation();
   const { user, userType } = useAuth();
+
   const getTabBarStyle = (route) => {
     const routeName = route.state ? route.state.routes[route.state.index].name : '';
     if (routeName === 'Chat') {
@@ -137,9 +124,11 @@ const HomeTabs = () => {
     }
     return {};
   };
+
   const navigateToAddPost = () => {
     navigation.navigate('AddPost');
   };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -261,27 +250,25 @@ const MainStack = () => {
           ),
         }} 
       />
-<Stack.Screen 
-  name="ChartScreen" 
-  component={ChartScreen} 
-  options={{
-    title: 'Chart Screen',
-    headerStyle: {
-      backgroundColor: '#6E42A3', // اللون البنفسجي الغامق
-    },
-    headerTintColor: '#fff', // لون النص والأيقونات في شريط التنقل
-    headerTitleStyle: {
-      //fontWeight: 'bold', // تحديد وزن الخط
-    },
-    headerLeft: () => (
-      <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-        <Icon name="chevron-left" size={25} color="#fff" />
-      </TouchableOpacity>
-    ),
-  }} 
-/>
-
-
+      <Stack.Screen 
+        name="ChartScreen" 
+        component={ChartScreen} 
+        options={{
+          title: 'Chart Screen',
+          headerStyle: {
+            backgroundColor: '#6E42A3', // اللون البنفسجي الغامق
+          },
+          headerTintColor: '#fff', // لون النص والأيقونات في شريط التنقل
+          headerTitleStyle: {
+            //fontWeight: 'bold', // تحديد وزن الخط
+          },
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <Icon name="chevron-left" size={25} color="#fff" />
+            </TouchableOpacity>
+          ),
+        }} 
+      />
       <Stack.Screen 
         name="PostDetailsScreen" 
         component={PostDetailScreen} 
@@ -297,8 +284,6 @@ const MainStack = () => {
     </Stack.Navigator>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {

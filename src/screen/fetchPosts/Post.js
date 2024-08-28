@@ -65,18 +65,29 @@ const PostsSection = ({ navigation }) => {
   // التعامل مع البحث عن طريق الفئة واسم المستخدم
   const handleSearch = (text) => {
     setSearchTerm(text);
+  
     if (text === '') {
       setSearchResults([]);
     } else {
+      // تقسيم النص المدخل إلى كلمات مفتاحية بناءً على المسافات
+      const keywords = text.toLowerCase().split(' ');
+  
       const filteredPosts = posts.filter(item => {
-        const categoryMatch = item.category && item.category.toLowerCase().startsWith(text.toLowerCase());
-        const usernameMatch = item.username && item.username.toLowerCase().startsWith(text.toLowerCase());
-        return categoryMatch || usernameMatch;
+        // التحقق من تطابق الفئة أو اللون مع أي من الكلمات المفتاحية
+        const categoryMatch = keywords.some(keyword => item.category && item.category.toLowerCase().includes(keyword));
+        const colorMatch = keywords.some(keyword => item.color && item.color.toLowerCase().includes(keyword));
+  
+        // إرجاع المنشورات التي تتطابق مع كلاً من الفئة واللون
+        return categoryMatch || colorMatch;
       });
-
+  
       setSearchResults(filteredPosts);
     }
   };
+  
+
+  
+
 
   // فتح الكاميرا أو المعرض لاختيار الصورة
   const pickImage = async () => {

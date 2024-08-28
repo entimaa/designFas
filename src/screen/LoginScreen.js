@@ -111,27 +111,28 @@ const LoginScreen = () => {
       </View>
       <View style={styles.overlay} />
       <Animated.FlatList
-        data={data}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: true }
-        )}
-        keyExtractor={(item) => item.id.toString()}
-        horizontal
-        pagingEnabled
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <ImageBackground
-              source={item.image}
-              style={[
-                styles.image,
-                { borderWidth: 0.7, borderColor: 'white', borderRadius: 24 },
-              ]}
-              borderRadius={20}
-            />
-          </View>
-        )}
+  data={data}
+  onScroll={Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    { useNativeDriver: true } // Set useNativeDriver to true
+  )}
+  keyExtractor={(item) => item.id.toString()}
+  horizontal
+  pagingEnabled
+  renderItem={({ item }) => (
+    <View style={styles.item}>
+      <ImageBackground
+        source={item.image}
+        style={[
+          styles.image,
+          { borderWidth: 0.7, borderColor: 'white', borderRadius: 24 },
+        ]}
+        borderRadius={20}
       />
+    </View>
+  )}
+/>
+
       <View style={{ width: '100%', height: '60%', alignItems: 'center' }}>
         <Text style={{ fontSize: 24, justifyContent: 'space-between', fontWeight: 'bold' }}>
           Login

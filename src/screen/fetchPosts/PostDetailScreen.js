@@ -12,11 +12,16 @@ const PostDetailsScreen = () => {
   const { postId,username, userId,postImageUrl} = route.params;
   const [post, setPost] = useState(null);
   const [heartColor, setHeartColor] = useState('#000');
+  const [dislikeColor, setDislikeColor] = useState('#000');
+
   const [commentColor, setCommentColor] = useState('#000');
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState([]);
   const [likesCount, setLikesCount] = useState(0);
+  const [dislikesCount, setDislikesCount] = useState(0);
+  const [dislikedByUser, setDislikedByUser] = useState(false);
+
   const [likedByUser, setLikedByUser] = useState(false);
   const [reportCount, setReportCount] = useState(0);
   const [reportedByUser, setReportedByUser] = useState(false);
@@ -42,8 +47,10 @@ const PostDetailsScreen = () => {
         setPost(postData);
         setComments(postData.comments || []);
         setLikesCount(postData.likesCount || 0);
+        setDislikesCount(postData.dislikesCount || 0);
         setReportCount(postData.reportCount || 0);
         setLikedByUser(Array.isArray(postData.likes) ? postData.likes.includes(user.uid) : false);
+        setDislikedByUser(Array.isArray(postData.dislikes) ? postData.dislikes.includes(user.uid) : false);
         setReportedByUser(Array.isArray(postData.reports) ? postData.reports.includes(user.uid) : false);
       }
     });
@@ -51,11 +58,16 @@ const PostDetailsScreen = () => {
     return () => unsubscribe();
   }, [postId, user.uid]);
 
+  useEffect(() => {
+    setHeartColor(likedByUser ? 'red' : '#000');
+  }, [likedByUser]);
   
+  console.log(dislikesCount)
   const toggleHeartColor = async () => {
     const postRef = doc(db, 'postsDesigner', postId);
     try {
       if (likedByUser) {
+        // إذا كان المستخدم قد أحب المنشور بالفعل
         await updateDoc(postRef, {
           likes: arrayRemove(user.uid),
           likesCount: likesCount - 1,
@@ -64,6 +76,17 @@ const PostDetailsScreen = () => {
         setLikesCount(likesCount - 1);
         setHeartColor('#000');
       } else {
+        // تحقق مما إذا كان المستخدم قد ضغط على عدم الإعجاب مسبقًا
+        if (dislikedByUser) {
+          await updateDoc(postRef, {
+            dislikes: arrayRemove(user.uid),
+            dislikesCount: dislikesCount - 1,
+          });
+          setDislikedByUser(false);
+          setDislikesCount(dislikesCount - 1);
+          setDislikeColor('#000');
+        }
+  
         await updateDoc(postRef, {
           likes: arrayUnion(user.uid),
           likesCount: likesCount + 1,
@@ -77,7 +100,46 @@ const PostDetailsScreen = () => {
       Alert.alert('Error', 'Failed to update likes.');
     }
   };
-
+  
+  const toggleDislikeColor = async () => {
+    const postRef = doc(db, 'postsDesigner', postId);
+    try {
+      if (dislikedByUser) {
+        // إذا كان المستخدم قد ضغط على عدم الإعجاب بالفعل
+        await updateDoc(postRef, {
+          dislikes: arrayRemove(user.uid),
+          dislikesCount: dislikesCount - 1,
+        });
+        setDislikedByUser(false);
+        setDislikesCount(dislikesCount - 1);
+        setDislikeColor('#000');
+      } else {
+        // تحقق مما إذا كان المستخدم قد أحب المنشور مسبقًا
+        if (likedByUser) {
+          await updateDoc(postRef, {
+            likes: arrayRemove(user.uid),
+            likesCount: likesCount - 1,
+          });
+          setLikedByUser(false);
+          setLikesCount(likesCount - 1);
+          setHeartColor('#000');
+        }
+  
+        await updateDoc(postRef, {
+          dislikes: arrayUnion(user.uid),
+          dislikesCount: dislikesCount + 1,
+        });
+        setDislikedByUser(true);
+        setDislikesCount(dislikesCount + 1);
+        setDislikeColor('blue'); // يمكنك تغيير اللون حسب رغبتك
+      }
+    } catch (error) {
+      console.error('Error updating dislikes:', error);
+      Alert.alert('Error', 'Failed to update dislikes.');
+    }
+  };
+  
+  
   const toggleCommentColor = () => {
     setCommentColor((prevColor) => (prevColor === '#000' ? '#000' : '#000'));
     setShowCommentsModal((prevShow) => !prevShow);
@@ -314,6 +376,12 @@ const PostDetailsScreen = () => {
                <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
                <Text style={styles.iconText}>{likesCount} likes</Text>
              </TouchableOpacity>
+
+             <TouchableOpacity onPress={toggleDislikeColor} style={styles.iconButton}>
+            <Icon name="thumbs-down" size={24} color={dislikeColor} />
+             <Text>  {dislikesCount} </Text>
+            </TouchableOpacity>
+
 
              <TouchableOpacity onPress={() => setShowCommentsModal(true)} style={styles.iconButton}>
                <Icon name={showCommentsModal ? 'comment' : 'comment-o'} size={20} color={commentColor} />

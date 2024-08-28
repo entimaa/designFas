@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from '@expo/vector-icons';
 
 const AdminHome = ({ navigation }) => {
-  const { user, userName } = useAuth();
+  const { userName } = useAuth(); // Assuming you are getting userName from useAuth context
   const { signOutUser } = useAuth();
 
   const handleSignOut = async () => {
@@ -13,7 +13,7 @@ const AdminHome = ({ navigation }) => {
       await signOutUser();
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login' }], // إعادة تعيين التنقل لتوجيه المستخدم إلى شاشة تسجيل الدخول
+        routes: [{ name: 'Login' }],
       });
     } catch (error) {
       console.error('Log Out Error: ', error);
@@ -42,14 +42,13 @@ const AdminHome = ({ navigation }) => {
           <Text style={styles.buttonText}>View Users Count</Text>
         </TouchableOpacity>
       </View>
-
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.button}
           onPress={() => navigation.navigate("Report")}
         >
           <Ionicons name="alert-circle-outline" size={24} color="#ffffff" style={styles.icon} />
-          <Text style={styles.buttonText}>reports</Text>
+          <Text style={styles.buttonText}>Reports</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.buttonContainer}>
@@ -71,12 +70,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#f0f0f5",
+    backgroundColor: "#FAF0E6", // Beige background color
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#333333",
+    color: "#8B4513", // Dark honey color
     marginBottom: 32,
   },
   buttonContainer: {
@@ -84,7 +83,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   button: {
-    backgroundColor: "#ff6f61",
+    backgroundColor: "#D2B48C", // Light honey color
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -102,7 +101,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   signOutButton: {
-    backgroundColor: "#dc3545",
+    backgroundColor: "#A0522D", // Darker honey color for sign out button
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 10,
