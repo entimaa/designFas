@@ -6,7 +6,7 @@ import { db } from '../../../data/DataFirebase'; // Adjust the import path as ne
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Modal from 'react-native-modal';
-
+import ReportModal from './ReportModal';
 const PostDetailsScreen = () => {
   const route = useRoute();
   const { postId,username, userId,postImageUrl} = route.params;
@@ -34,6 +34,8 @@ const PostDetailsScreen = () => {
   console.log(postId);
   console.log(user.uid)
   console.log(postImageUrl)
+
+  /////report modile //// 
   const [modalVisible, setModalVisible] = useState(false);
   const [reportText, setReportText] = useState('');
 
@@ -240,50 +242,45 @@ const PostDetailsScreen = () => {
   };
 
   const handleReportSubmit = async () => {
-    // التحقق من إدخال نص التقرير
     if (!reportText.trim()) {
-      Alert.alert('تنبيه', 'يرجى إدخال نص التقرير.');
+      Alert.alert('Alert', 'Please enter the report text.');
       return;
     }
- 
-    // التأكد من صحة القيم قبل إرسالها
-    if (!postId || !userId  || !username || !user.uid ) {
-      Alert.alert('خطأ', 'توجد بيانات مفقودة. يرجى التحقق من جميع الحقول.');
+
+    if (!post.id || !post.userId || !post.username || !user.uid) {
+      Alert.alert('Error', 'Missing data. Please check all fields.');
       return;
     }
-  
+
     try {
-      const reportRef = doc(db, 'reports', postId);
-      
-      // *البيانات التي نريد حفظها في وثيقة التقرير
+      const reportRef = doc(db, 'reports', post.id);
       const reportData = {
-        reportTexts: arrayUnion(reportText.trim()), //! حفظ نصوص التقارير
-        reportedUsers: arrayUnion(user.uid), //! حفظ UID للمستخدم الذي أبلغ
+        reportTexts: arrayUnion(reportText.trim()),
+        reportedUsers: arrayUnion(user.uid),
         reportDetails: arrayUnion({
-          reportText: reportText.trim(), //! نص الإبلاغ
-          reportedBy: user.uid || 'unknown', //! UID الشخص الذي أبلغ
-          reportedByName: userName|| 'unknown', //! اسم الشخص الذي أبلغ
-          postId: postId|| 'unknown', // !معرف البوست
-          reportedTo: username|| 'unknown', // !UID الشخص الذي تم الإبلاغ عنه
-          reportedToName: userId| 'unknown', // !اسم الشخص الذي تم الإبلاغ عنه
-          postTitle: post.title || 'not', // !عنوان البوست
-           postImageUrl: postImageUrl|| 'unknown',
-          timestamp: new Date(), // !توقيت التقرير
+          reportText: reportText.trim(),
+          reportedBy: user.uid || 'unknown',
+          reportedByName: userName || 'unknown',
+          postId: post.id || 'unknown',
+          reportedTo: post.userId || 'unknown',
+          reportedToName: post.username || 'unknown',
+          postTitle: post.title || 'not available',
+          postImageUrl: post.imageUrl || 'unknown',
+          timestamp: new Date(),
         }),
       };
-  
-      // استخدام setDoc بدلاً من updateDoc لإنشاء الوثيقة إذا لم تكن موجودة
+
       await setDoc(reportRef, reportData, { merge: true });
-  
-      Alert.alert('نجاح', 'تم إرسال تقريرك بنجاح.');
-  
-      setReportText(''); // تنظيف النص بعد الإرسال
+
+      Alert.alert('Success', 'Your report has been submitted successfully.');
+      setReportText('');
+      setModalVisible(false); // Close the modal after submission
     } catch (error) {
-      console.error('خطأ في إرسال التقرير:', error);
-      Alert.alert('خطأ', 'حدث خطأ أثناء إرسال التقرير.');
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', 'An error occurred while submitting the report.');
     }
   };
-  
+
   
   
   
@@ -293,44 +290,7 @@ const PostDetailsScreen = () => {
       setModalVisible(true);
     };
     
-   const ReportModal = ({ modalVisible, setModalVisible, reportText, setReportText, handleReportSubmit }) => (
-    <Modal
-    animationType="slide"
-    transparent={true}
-    visible={modalVisible}
-    onRequestClose={() => {
-      setReportText(''); // قم بإعادة تعيين نص التقرير عند إغلاق الـ Modal
-      setModalVisible(false);
-    }}
-  >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalContainer}
-      >
-        <View style={styles.modalContentreport}>
-          <Text style={styles.modalTitle}>Add Report</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.reportInput}
-              placeholder="Enter report text here..."
-              value={reportText}
-              onChangeText={setReportText}
-              multiline
-              autoFocus
-            />
-            <View style={styles.buttonsContainer}>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.iconButtonReport}>
-                <Icon name="times" size={24} color="#F44336" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleReportSubmit} style={styles.iconButtonReport}>
-                <Icon name="send" size={24} color="#4CAF50" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
+  
   
   
 
@@ -374,11 +334,11 @@ const PostDetailsScreen = () => {
            <View style={styles.iconContainer}>
              <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
                <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
-               <Text style={styles.iconText}>{likesCount} likes</Text>
+               <Text style={styles.iconText}>{likesCount} </Text>
              </TouchableOpacity>
 
              <TouchableOpacity onPress={toggleDislikeColor} style={styles.iconButton}>
-            <Icon name="thumbs-down" size={24} color={dislikeColor} />
+            <Icon  name={dislikedByUser ? "thumbs-down" : "thumbs-o-down"}  size={22} color={dislikeColor} />
              <Text>  {dislikesCount} </Text>
             </TouchableOpacity>
 
@@ -390,25 +350,31 @@ const PostDetailsScreen = () => {
 
              {user.uid === post.userId && (
                <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
-                 <Icon name="trash" size={20} color="#000" />
-                 <Text style={styles.iconText}>Delete</Text>
+                 <View style={styles.iconWrapper}>
+               <Icon name="trash" size={20} color="red" />
+                 </View>
                </TouchableOpacity>
              )}
 
-             {user.uid !== post.userId && (
-               <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
-                 <Image source={require('../../pic/iconsPost/REPORT.png')} style={styles.reportIcon} />
-                 <Text style={styles.iconText}>Report</Text>
-               </TouchableOpacity>
-             )}
+<View>
+      {/* Your PostCard content */}
+      {user.uid !== post.userId && (
+        <TouchableOpacity onPress={confirmReport} >
+          <Image
+            source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
+            style={styles.reportIcon}
+          />
+        </TouchableOpacity>
+      )}
 
-<ReportModal
-  modalVisible={modalVisible}
-  setModalVisible={setModalVisible}
-  reportText={reportText}
-  setReportText={setReportText}
-  handleReportSubmit={handleReportSubmit}
-/>
+      <ReportModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        reportText={reportText}
+        setReportText={setReportText}
+        handleReportSubmit={handleReportSubmit}
+      />
+    </View>
            </View>
          </View>
 
@@ -527,16 +493,22 @@ const PostDetailsScreen = () => {
     iconContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'center', // Optionally ensures icons are aligned vertically
     },
     iconButton: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'stretch',
     },
     iconText: {
       marginLeft: 5,
       fontSize: 14,
     },
+    iconWrapper: {
+      left:37
+    },
     reportIcon: {
+      bottom:620,
+      left:3,
       width: 20,
       height: 20,
     },
@@ -659,4 +631,3 @@ const PostDetailsScreen = () => {
   });
 
    export default PostDetailsScreen;
-

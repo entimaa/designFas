@@ -6,7 +6,7 @@ import { db } from '../../../data/DataFirebase'; // Adjust the import path as ne
 import { useAuth } from '../../context/AuthContext'; // Import your authentication context
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Modal from 'react-native-modal';
-
+import ReportModal from './ReportModal';
 const PostCard = ({ post, onPostDelete }) => {
   const [heartColor, setHeartColor] = useState('#000');
   const [dislikeColor, setDislikeColor] = useState('#000');
@@ -283,91 +283,54 @@ const handleReportSubmit = async () => {
 */
 
 
-const handleReportSubmit = async () => {
-  if (!reportText.trim()) {
-    Alert.alert('Alert', 'Please enter the report text.');
-    return;
-  }
-
-  if (!post.id || !post.userId || !post.username || !user.uid) {
-    Alert.alert('Error', 'Missing data. Please check all fields.');
-    return;
-  }
-
-  try {
-    const reportRef = doc(db, 'reports', post.id);
-    const reportData = {
-      reportTexts: arrayUnion(reportText.trim()),
-      reportedUsers: arrayUnion(user.uid),
-      reportDetails: arrayUnion({
-        reportText: reportText.trim(),
-        reportedBy: user.uid || 'unknown',
-        reportedByName: userName || 'unknown',
-        postId: post.id || 'unknown',
-        reportedTo: post.userId || 'unknown',
-        reportedToName: post.username || 'unknown',
-        postTitle: post.title || 'not available',
-        postImageUrl: post.imageUrl || 'unknown',
-        timestamp: new Date(),
-      }),
-    };
-
-    await setDoc(reportRef, reportData, { merge: true });
-
-    Alert.alert('Success', 'Your report has been submitted successfully.');
-    setReportText('');
-  } catch (error) {
-    console.error('Error submitting report:', error);
-    Alert.alert('Error', 'An error occurred while submitting the report.');
-  }
-};
 
 
 
   const confirmReport = () => {
     setModalVisible(true);
   };
+
+  const handleReportSubmit = async () => {
+    if (!reportText.trim()) {
+      Alert.alert('Alert', 'Please enter the report text.');
+      return;
+    }
+
+    if (!post.id || !post.userId || !post.username || !user.uid) {
+      Alert.alert('Error', 'Missing data. Please check all fields.');
+      return;
+    }
+
+    try {
+      const reportRef = doc(db, 'reports', post.id);
+      const reportData = {
+        reportTexts: arrayUnion(reportText.trim()),
+        reportedUsers: arrayUnion(user.uid),
+        reportDetails: arrayUnion({
+          reportText: reportText.trim(),
+          reportedBy: user.uid || 'unknown',
+          reportedByName: userName || 'unknown',
+          postId: post.id || 'unknown',
+          reportedTo: post.userId || 'unknown',
+          reportedToName: post.username || 'unknown',
+          postTitle: post.title || 'not available',
+          postImageUrl: post.imageUrl || 'unknown',
+          timestamp: new Date(),
+        }),
+      };
+
+      await setDoc(reportRef, reportData, { merge: true });
+
+      Alert.alert('Success', 'Your report has been submitted successfully.');
+      setReportText('');
+      setModalVisible(false); // Close the modal after submission
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', 'An error occurred while submitting the report.');
+    }
+  };
   
-  const ReportModal = ({ modalVisible, setModalVisible, reportText, setReportText, handleReportSubmit }) => (
-    <Modal
-      isVisible={modalVisible}
-      onBackdropPress={() => {
-        setReportText(''); 
-        setModalVisible(false);
-      }}
-      onSwipeComplete={() => {
-        setReportText(''); 
-        setModalVisible(false);
-      }}
-      swipeDirection="down"
-      style={styles.modal}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalContainer}
-      >
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Report</Text>
-          <TextInput
-            style={styles.reportInput}
-            placeholder="Enter report text here..."
-            value={reportText}
-            onChangeText={setReportText}
-            multiline
-            autoFocus
-          />
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.iconButtonReport}>
-              <Icon name="times" size={24} color="#F44336" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleReportSubmit} style={styles.iconButtonReport}>
-              <Icon name="send" size={24} color="#4CAF50" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
+ 
   
 
   return (
@@ -409,25 +372,26 @@ const handleReportSubmit = async () => {
             <Text style={styles.iconText}>{comments.length} comments</Text>
           </TouchableOpacity>
 
-<View>
-          {user.uid !== post.userId && (
-      <TouchableOpacity onPress={confirmReport} style={styles.iconButton}>
-        <Image
-          source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
-          style={styles.reportIcon}
-        />
-      </TouchableOpacity>
+          <View  style={styles.Vreport}>
+      {/* Your PostCard content */}
       
-    )}
-     <ReportModal
-  modalVisible={modalVisible}
-  setModalVisible={setModalVisible}
-  reportText={reportText}
-  setReportText={setReportText}
-  handleReportSubmit={handleReportSubmit}
-/>
+      {user.uid !== post.userId && (
+        <TouchableOpacity onPress={confirmReport} >
+          <Image
+            source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
+            style={styles.reportIcon}
+          />
+        </TouchableOpacity>
+      )}
 
-</View>
+      <ReportModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        reportText={reportText}
+        setReportText={setReportText}
+        handleReportSubmit={handleReportSubmit}
+      />
+    </View>
    
 
 
@@ -532,6 +496,11 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
   },
+
+  Vreport:{
+    bottom:670,
+
+  },
   postTitle: {
     fontSize: 16,
     marginBottom: 5,
@@ -615,11 +584,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#F8EDE3',
-    backgroundColor: '#F8EDE3',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     padding: 20,
-    height: '80%',
+    height: '50%',
     justifyContent: 'space-between',
   },
   modalContainer: {
@@ -674,10 +642,9 @@ const styles = StyleSheet.create({
     flexDirection: 'column', // ترتيب عمودي للعناصر
   },
   buttonsContainer: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', // !توزيع الأزرار بالتساوي
-    marginTop: 10, //! إضافة مسافة فوق الأزرار
-    width: '99%', //! توسيع عرض الأزرار لتتناسب مع الحاوية
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
   iconButtoniconButton: {
     justifyContent: 'center',
