@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import {
   View,
   TextInput,
-  Button,
   Alert,
   Text,
   TouchableOpacity,
@@ -18,12 +17,14 @@ import { useAuth } from '../context/AuthContext';
 import { validateEmail, validatePassword, getErrorText } from '../messegeErorr/errorMessage';
 import { styles } from '../styles/styles';
 import { useNavigation } from '@react-navigation/native';
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from '../../data/DataFirebase';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const { signIn ,isBlocked} = useAuth();
+  const { signIn, isBlocked } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -46,16 +47,14 @@ const LoginScreen = () => {
       setLoading(false);
       return;
     }
-  
-    
-   
-    try {
-      const { isBlocked } = await signIn(email, password); // حاول تسجيل الدخول وتحقق من حالة الحظر
 
-      if (isBlocked) {  // إذا كان المستخدم محظورًا، اعرض رسالة تحذير ولا تسمح بالدخول
-        Alert.alert('Account Blocked', 'Your account has been blocked ');
+    try {
+      const { isBlocked } = await signIn(email, password);
+
+      if (isBlocked) {
+        Alert.alert('Account Blocked', 'Your account has been blocked.');
       } else {
-        //navigation.navigate('ProfileScreen');  // السماح بالدخول إذا لم يكن محظورًا
+        // السماح بالدخول إذا لم يكن محظورًا
       }
     } catch (error) {
       console.error("Error signing in:", error);
@@ -66,20 +65,31 @@ const LoginScreen = () => {
     }
   };
 
-  
-
   const handleRegister = () => {
     navigation.navigate('Register');
   };
 
+  const handleForgotPassword = () => {
+    if (email === '') {
+      Alert.alert('Error', 'Please enter your email to reset password.');
+      return;
+    }
+    
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        Alert.alert('Success', 'Password reset email sent!');
+      })
+      .catch(error => {
+        Alert.alert('Error', error.message);
+      });
+  };
 
   const data = [
-     { id: 5, image: require('../pic/des3.png') },
-    
-    { id: 2, image: require('../pic/des4.png') },
-   
-    { id: 6, image: require('../pic/des6.png') },
-    { id: 4, image: require('../pic/des2.png') },
+    { id: 2, image: require('../pic/women2.jpeg') },
+
+    { id: 5, image: require('../pic/man.jpeg') },
+    { id: 6, image: require('../pic/women4.jpeg') },
+    { id: 4, image: require('../pic/women1.jpeg') },
   ];
 
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -111,30 +121,30 @@ const LoginScreen = () => {
       </View>
       <View style={styles.overlay} />
       <Animated.FlatList
-  data={data}
-  onScroll={Animated.event(
-    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    { useNativeDriver: true } // Set useNativeDriver to true
-  )}
-  keyExtractor={(item) => item.id.toString()}
-  horizontal
-  pagingEnabled
-  renderItem={({ item }) => (
-    <View style={styles.item}>
-      <ImageBackground
-        source={item.image}
-        style={[
-          styles.image,
-          { borderWidth: 0.7, borderColor: 'white', borderRadius: 24 },
-        ]}
-        borderRadius={20}
+        data={data}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        pagingEnabled
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <ImageBackground
+              source={item.image}
+              style={[
+                styles.image,
+                { borderWidth: 0.7, borderColor: 'white', borderRadius: 24 },
+              ]}
+              borderRadius={20}
+            />
+          </View>
+        )}
       />
-    </View>
-  )}
-/>
 
       <View style={{ width: '100%', height: '60%', alignItems: 'center' }}>
-        <Text style={{ fontSize: 24, justifyContent: 'space-between', fontWeight: 'bold' }}>
+        <Text style={{ fontSize: 24, justifyContent: 'space-between', fontWeight: 'bold',color:'#000' }}>
           Login
         </Text>
         <TextInput
@@ -152,12 +162,26 @@ const LoginScreen = () => {
           secureTextEntry
         />
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-        <Button title="Login" onPress={handleLogin} color={'#000'} disabled={loading} />
+
+        {/* زر تسجيل الدخول المعدل */}
+        <TouchableOpacity
+          style={styles.loginButtonCustom}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          <Text style={styles.loginButtonTextCustom}>Login</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={handleForgotPassword}>
+          <Text style={styles.loginText}>Forgot Password?</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity onPress={handleRegister}>
           <Text style={styles.loginText}>
             Don't have an account? Register
           </Text>
         </TouchableOpacity>
+
         {loading && <ActivityIndicator size="large" color="#4CAF50" />}
       </View>
     </View>

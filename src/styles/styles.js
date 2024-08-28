@@ -22,16 +22,16 @@ export  const styles = StyleSheet.create({
       width: '100%',
       height: '6%',
  },
-    input: {
-      paddingTop:20,
-      paddingBottom:10,
-      width:225,
-      fontSize:20,
-      borderBottomWidth:1,
-      borderBottomColor:'#000',
-      marginBottom:10,
-      textAlign:'center'
-    },
+ input: {
+  paddingTop: 20,
+  paddingBottom: 10,
+  width: 225,
+  fontSize: 20,
+  borderBottomWidth: 1,
+  borderBottomColor: '#000',
+  marginBottom: 10,
+  textAlign: 'center',
+},
     errorText: {
       color: 'red',
       marginBottom: 10,
@@ -47,9 +47,7 @@ export  const styles = StyleSheet.create({
       color: '#fff', // Change the text color to white
       textDecorationLine: 'underline',
       textAlign: 'center',
-     fontSize: 14,
-     
-    
+      fontSize: 14,
     },
     imagest:{
       backgroundColor: '#74C365',
@@ -70,6 +68,22 @@ export  const styles = StyleSheet.create({
       height: width * 0.9,
       resizeMode: 'cover',
       
+    },
+
+    loginButtonCustom: {
+      height: 44,
+      width: '44%', // تحديد العرض بالنسبة المئوية
+      backgroundColor: '#000', // لون برتقالي مميز
+      borderRadius: 25, // زوايا مستديرة
+      justifyContent: 'center', // محاذاة النص في الوسط عمودياً
+      alignItems: 'center', // محاذاة النص في الوسط أفقياً
+      marginTop: 20,
+    },
+
+    loginButtonTextCustom: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: 'bold',
     },
     radioText:{
       fontSize:15

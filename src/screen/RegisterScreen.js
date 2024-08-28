@@ -16,7 +16,6 @@ import {
   InfoUser,
 } from "../messegeErorr/errorMessage";
 import { Button } from 'react-native-elements';
-import LottieView from 'lottie-react-native'; // Import Lottie
 
 const RegisterScreen = ({ navigation }) => {
   const { signUp } = useAuth();
@@ -28,18 +27,12 @@ const RegisterScreen = ({ navigation }) => {
   const [passwordError, setPasswordError] = useState("");
   const [nameError, setNameError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-  const [selectedCategoryName, setSelectedCategoryName] = useState(""); //save name about id
+  const [selectedCategoryName, setSelectedCategoryName] = useState(""); 
   const [loading, setLoading] = useState(false);
 
   const category = [
-    {
-      id: 1,
-      name: 'Designer'
-    },
-    {
-      id: 2,
-      name: 'Client'
-    }
+    { id: 1, name: 'Designer' },
+    { id: 2, name: 'Client' }
   ];
 
   const handleRegister = async () => {
@@ -85,7 +78,7 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleSelectionRadio = (categoryName) => {
-    setSelectedCategoryName(categoryName); // Update selected category name when radio button is pressed
+    setSelectedCategoryName(categoryName); 
   };
 
   const handleLogin = () => {
@@ -94,11 +87,10 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <ImageBackground 
-      source={require('../pic/FsH.png')} // Add a background image related to fashion
+      source={require('../pic/WhatsApp Image 2024-08-28 at 14.27.28.jpeg')} 
       style={styles.container}
     >
       <View style={styles.overlay}>
-       
         <Text style={styles.title}>Register</Text>
         <TextInput
           style={styles.input}
@@ -141,13 +133,13 @@ const RegisterScreen = ({ navigation }) => {
                 <View style={styles.radio}>
                   {selectedCategoryName === item.name ? <View style={styles.radioDot}></View> : null}
                 </View>
-                <Text style={styles.radioText}>{item.name}  </Text>
+                <Text style={styles.radioText}>{item.name}   </Text>
               </View>
             </TouchableOpacity>
           ))}
         </View>
         
-        <View style={styles.loginButton}>
+        <View style={styles.RigButton}>
           <Button
             title="Register"
             buttonStyle={styles.buttonStyle}
@@ -176,24 +168,32 @@ const styles = StyleSheet.create({
   overlay: {
     width: '90%',
     padding: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white background
-    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 20,
     alignItems: 'center',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
   },
   title: {
-    fontSize: 2,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
+    color: '#ff7f50',
   },
   input: {
     height: 50,
     width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 15,
-    marginBottom: 10,
+    marginBottom: 12,
+    backgroundColor: '#f9f9f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   errorText: {
     color: 'red',
@@ -211,8 +211,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 5,
-    
+    marginRight: 10,
   },
   radioDot: {
     width: 12,
@@ -221,28 +220,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
   },
   radioText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#333',
   },
-  loginButton: {
+  RigButton: {
     width: '100%',
     marginBottom: 20,
   },
   buttonStyle: {
-    backgroundColor: '#584858',
-    borderRadius: 18,
+    backgroundColor: '#ff7f50',
+    borderRadius: 25,
+    paddingVertical: 12,
   },
   buttonTitleStyle: {
     fontSize: 18,
+    fontWeight: 'bold',
   },
   loginText: {
     fontSize: 16,
     color: '#007bff',
-  },
-  animation: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
+    marginTop: 10,
   }
 });
 
