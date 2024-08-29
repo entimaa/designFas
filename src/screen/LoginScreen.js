@@ -85,11 +85,10 @@ const LoginScreen = () => {
   };
 
   const data = [
-    { id: 2, image: require('../pic/women2.jpeg') },
-
-    { id: 5, image: require('../pic/man.jpeg') },
-    { id: 6, image: require('../pic/women4.jpeg') },
-    { id: 4, image: require('../pic/women1.jpeg') },
+    { id: 1, image: require('../pic/image-asset (2).jpeg') },
+    { id:4, image: require('../pic/women5.jpeg') },
+    { id: 3, image: require('../pic/bac2.jpg') },
+    { id: 2, image: require('../pic/bac1.jpeg') },
   ];
 
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -121,27 +120,28 @@ const LoginScreen = () => {
       </View>
       <View style={styles.overlay} />
       <Animated.FlatList
-        data={data}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: true }
-        )}
-        keyExtractor={(item) => item.id.toString()}
-        horizontal
-        pagingEnabled
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <ImageBackground
-              source={item.image}
-              style={[
-                styles.image,
-                { borderWidth: 0.7, borderColor: 'white', borderRadius: 24 },
-              ]}
-              borderRadius={20}
-            />
-          </View>
-        )}
+  data={data}
+  onScroll={Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    { useNativeDriver: true } // تأكد من تعيين هذه القيمة
+  )}
+  keyExtractor={(item) => item.id.toString()}
+  horizontal
+  pagingEnabled
+  renderItem={({ item }) => (
+    <View style={styles.item}>
+      <ImageBackground
+        source={item.image}
+        style={[
+          styles.image,
+          { borderWidth: 0.7, borderColor: 'white', borderRadius: 24 },
+        ]}
+        borderRadius={20}
       />
+    </View>
+  )}
+/>
+
 
       <View style={{ width: '100%', height: '60%', alignItems: 'center' }}>
         <Text style={{ fontSize: 24, justifyContent: 'space-between', fontWeight: 'bold',color:'#000' }}>

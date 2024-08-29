@@ -30,7 +30,7 @@ const ProfileStack = () => {
       await signOutUser();
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login' }], // إعادة تعيين التنقل لتوجيه المستخدم إلى شاشة تسجيل الدخول
+        routes: [{ name: 'Login' }],
       });
     } catch (error) {
       console.error('Log Out Error: ', error);

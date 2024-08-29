@@ -21,6 +21,8 @@ const PostCard = ({ post, onPostDelete }) => {
   const [reportCount, setReportCount] = useState(post.reportCount || 0);
   const [reportedByUser, setReportedByUser] = useState(false);
   const [reportComment, setReportComment] = useState('');
+  const [color, setColor] = useState('#FFFFFF'); // قيمة اللون الافتراضية
+
   // ? report commett***
   const [modalVisible, setModalVisible] = useState(false);
 const [reportText, setReportText] = useState('');
@@ -30,12 +32,17 @@ const [isInputVisible, setIsInputVisible] = useState(false);
   const { user, userName, userImgUrl } = useAuth();
 
   useEffect(() => {
+
     const postRef = doc(db, 'postsDesigner', post.id);
     const unsubscribe = onSnapshot(postRef, (doc) => {
       const postData = doc.data();
       setComments(postData.comments || []);
       setLikesCount(postData.likesCount || 0);
       setReportCount(postData.reportCount || 0);
+
+      if (postData.color) {
+        setColor(postData.color);
+      }
 
       if (Array.isArray(postData.likes)) {
         setLikedByUser(postData.likes.includes(user.uid));
@@ -238,7 +245,7 @@ const [isInputVisible, setIsInputVisible] = useState(false);
         ]
       );
     } else {
-      Alert.alert('Error', 'You can only delete your own comments.');
+     return null ;
     }
   };
   
@@ -335,8 +342,11 @@ const handleReportSubmit = async () => {
 
   return (
     <View style={styles.container}>
+      
       <View style={styles.card}>
+        
         <View style={styles.userInfo}>
+          
           <Image
             style={styles.userImg}
             source={post.userimg ? { uri: post.userimg } : require('../../pic/avtar.png')}
@@ -344,17 +354,39 @@ const handleReportSubmit = async () => {
             onError={(error) => console.log('Image Load Error:', error)}
           />
           <View style={styles.userText}>
+            
+          <View style={styles.postContainer}>
+  {user.uid !== post.userId && (
+    <TouchableOpacity onPress={confirmReport} style={styles.reportIcon}>
+      <Image
+        source={require('../../pic/iconsPost/REPORT.png')}
+        style={{ width: '100%', height: '100%' }} // استخدام نسبة العرض والارتفاع لضمان حجم الأيقونة
+      />
+    </TouchableOpacity>
+  )}
+
+  <ReportModal
+    modalVisible={modalVisible}
+    setModalVisible={setModalVisible}
+    reportText={reportText}
+    setReportText={setReportText}
+    handleReportSubmit={handleReportSubmit}
+  />
+
+  {/* باقي محتوى الكارد هنا */}
+</View>
+
             <TouchableOpacity onPress={navigateToUserProfile}>
               <Text style={styles.userName}>{post.username}</Text>
-              <Text style={styles.userName}>{post.category}</Text>
+              <Text style={styles.userNameCategory}>{post.category} {post .color}</Text>
             </TouchableOpacity>
-            <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
           </View>
         </View>
+        {post.title ? <Text style={styles.postTitle}>{post.title}</Text> : null}
+        {post.content ? <Text style={styles.postContent}>{post.content}</Text> : null}
 
-        <Text style={styles.postTitle}>{post.title}</Text>
         {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
-        <Text style={styles.postContent}>{post.content}</Text>
+        <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
         <View style={styles.separator}></View>
         <View style={styles.iconContainer}>
           <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
@@ -372,28 +404,10 @@ const handleReportSubmit = async () => {
             <Text style={styles.iconText}>{comments.length} comments</Text>
           </TouchableOpacity>
 
-          <View  style={styles.Vreport}>
-      {/* Your PostCard content */}
-      
-      {user.uid !== post.userId && (
-        <TouchableOpacity onPress={confirmReport} >
-          <Image
-            source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
-            style={styles.reportIcon}
-          />
-        </TouchableOpacity>
-      )}
-
-      <ReportModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        reportText={reportText}
-        setReportText={setReportText}
-        handleReportSubmit={handleReportSubmit}
-      />
-    </View>
+          
    
 
+    
 
           {user.uid === post.userId && (
             <TouchableOpacity onLongPress={confirmDelete} style={styles.iconButton}>
@@ -479,6 +493,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  
   userImg: {
     width: 40,
     height: 40,
@@ -487,19 +502,20 @@ const styles = StyleSheet.create({
   },
   userText: {
     flex: 1,
+    top:1
   },
   userName: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 15,
   },
+
+  userNameCategory:{
+    fontSize: 15,
+  },
+  
   postTime: {
     color: '#888',
     fontSize: 12,
-  },
-
-  Vreport:{
-    bottom:670,
-
   },
   postTitle: {
     fontSize: 16,
@@ -507,7 +523,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 500,
+    height: 450,
     borderRadius: 8,
     marginVertical: 10,
     resizeMode: 'cover', // Or 'contain' depending on your preference
@@ -524,18 +540,26 @@ const styles = StyleSheet.create({
   iconContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center', // Optionally ensures icons are aligned vertically
   },
   iconButton: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
   },
   iconText: {
     marginLeft: 5,
     fontSize: 14,
   },
+  iconWrapper: {
+    left:37
+  },
   reportIcon: {
+    position: 'absolute', // Ensures the icon is positioned absolutely
+    top: 0, // Adjusts the icon to be above the postContainer
+    right: 0, // Adjusts the icon to be on the top-right corner
     width: 20,
     height: 20,
+    zIndex: 1, // Ensures the icon is above other content
   },
   commentContainer: {
     flexDirection: 'row',
@@ -584,10 +608,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#F8EDE3',
+    backgroundColor: '#F8EDE3',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     padding: 20,
-    height: '50%',
+    height: '80%',
     justifyContent: 'space-between',
   },
   modalContainer: {
@@ -642,9 +667,10 @@ const styles = StyleSheet.create({
     flexDirection: 'column', // ترتيب عمودي للعناصر
   },
   buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    flexDirection: 'row', 
+    justifyContent: 'space-between', // !توزيع الأزرار بالتساوي
+    marginTop: 10, //! إضافة مسافة فوق الأزرار
+    width: '99%', //! توسيع عرض الأزرار لتتناسب مع الحاوية
   },
   iconButtoniconButton: {
     justifyContent: 'center',

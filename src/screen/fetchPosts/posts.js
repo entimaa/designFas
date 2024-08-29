@@ -111,7 +111,7 @@ const PostsSection = ({ navigation }) => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Search by category or username"
+          placeholder="Search by category or username "
           placeholderTextColor="#888"
           value={searchTerm}
           onChangeText={handleSearch}

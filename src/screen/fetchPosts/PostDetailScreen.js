@@ -13,6 +13,7 @@ const PostDetailsScreen = () => {
   const [post, setPost] = useState(null);
   const [heartColor, setHeartColor] = useState('#000');
   const [dislikeColor, setDislikeColor] = useState('#000');
+  const [color, setColor] = useState('#FFFFFF'); // قيمة اللون الافتراضية
 
   const [commentColor, setCommentColor] = useState('#000');
   const [showCommentsModal, setShowCommentsModal] = useState(false);
@@ -40,8 +41,6 @@ const PostDetailsScreen = () => {
   const [reportText, setReportText] = useState('');
 
   useEffect(() => {
-
-
     const postRef = doc(db, 'postsDesigner', postId);
     const unsubscribe = onSnapshot(postRef, (doc) => {
       const postData = doc.data();
@@ -54,12 +53,12 @@ const PostDetailsScreen = () => {
         setLikedByUser(Array.isArray(postData.likes) ? postData.likes.includes(user.uid) : false);
         setDislikedByUser(Array.isArray(postData.dislikes) ? postData.dislikes.includes(user.uid) : false);
         setReportedByUser(Array.isArray(postData.reports) ? postData.reports.includes(user.uid) : false);
+        setColor(postData.color || ''); // Extract and set the color field
       }
     });
-
+  
     return () => unsubscribe();
-  }, [postId, user.uid]);
-
+  }, [postId, user.uid]); 
   useEffect(() => {
     setHeartColor(likedByUser ? 'red' : '#000');
   }, [likedByUser]);
@@ -311,6 +310,7 @@ const PostDetailsScreen = () => {
     >
       <View style={styles.card}>
         <View style={styles.userInfo}>
+          
           <Image
             style={styles.userImg}
             source={post.userimg ? { uri: post.userimg } : require('../../pic/avtar.png')}
@@ -318,17 +318,38 @@ const PostDetailsScreen = () => {
             onError={(error) => console.log('Image Load Error:', error)}
           />
           <View style={styles.userText}>
+          <View style={styles.postContainer}>
+  {user.uid !== post.userId && (
+    <TouchableOpacity onPress={confirmReport} style={styles.reportIcon}>
+      <Image
+        source={require('../../pic/iconsPost/REPORT.png')}
+        style={{ width: '100%', height: '100%' }} // استخدام نسبة العرض والارتفاع لضمان حجم الأيقونة
+      />
+    </TouchableOpacity>
+  )}
+
+  <ReportModal
+    modalVisible={modalVisible}
+    setModalVisible={setModalVisible}
+    reportText={reportText}
+    setReportText={setReportText}
+    handleReportSubmit={handleReportSubmit}
+  />
+
+  {/* باقي محتوى الكارد هنا */}
+</View>
           <TouchableOpacity onPress={navigateToUserProfile}>
                  <Text style={styles.userName}>{post.username}</Text>
-                 <Text style={styles.userName}>{post.category}</Text>
+                 <Text style={styles.userNameCategory}>{post.category} {post.color}</Text>
                </TouchableOpacity>
-               <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
              </View>
            </View>
 
-           <Text style={styles.postTitle}>{post.title}</Text>
+           {post.title ? <Text style={styles.postTitle}>{post.title}</Text> : null}
+        {post.content ? <Text style={styles.postContent}>{post.content}</Text> : null}
            {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
-           <Text style={styles.postContent}>{post.content}</Text>
+           <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
+
            <View style={styles.separator}></View>
 
            <View style={styles.iconContainer}>
@@ -347,7 +368,6 @@ const PostDetailsScreen = () => {
                <Icon name={showCommentsModal ? 'comment' : 'comment-o'} size={20} color={commentColor} />
                <Text style={styles.iconText}>{comments.length} comments</Text>
              </TouchableOpacity>
-
              {user.uid === post.userId && (
                <TouchableOpacity onPress={confirmDelete} style={styles.iconButton}>
                  <View style={styles.iconWrapper}>
@@ -356,25 +376,9 @@ const PostDetailsScreen = () => {
                </TouchableOpacity>
              )}
 
-<View>
-      {/* Your PostCard content */}
-      {user.uid !== post.userId && (
-        <TouchableOpacity onPress={confirmReport} >
-          <Image
-            source={require('../../pic/iconsPost/REPORT.png')} // Ensure the image path is correct
-            style={styles.reportIcon}
-          />
-        </TouchableOpacity>
-      )}
 
-      <ReportModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        reportText={reportText}
-        setReportText={setReportText}
-        handleReportSubmit={handleReportSubmit}
-      />
-    </View>
+            
+
            </View>
          </View>
 
@@ -426,6 +430,8 @@ const PostDetailsScreen = () => {
     </TouchableOpacity>
   </View>
 </Modal>
+
+
 
        </KeyboardAvoidingView>
      );
@@ -503,9 +509,7 @@ const PostDetailsScreen = () => {
       marginLeft: 5,
       fontSize: 14,
     },
-    iconWrapper: {
-      left:37
-    },
+   
     reportIcon: {
       bottom:620,
       left:3,
@@ -585,6 +589,9 @@ const PostDetailsScreen = () => {
       elevation: 10,
       alignItems: 'center',
     },
+    userNameCategory:{
+      fontSize: 15,
+    },
     modalTitle: {
       fontSize: 18,
       fontWeight: 'bold',
@@ -596,21 +603,13 @@ const PostDetailsScreen = () => {
       justifyContent: 'space-between', // لضبط الأزرار بشكل متباعد
       flexDirection: 'row', // لجعل الأزرار بجانب بعضها أفقياً
     },
-    reportInput: {
-      borderColor: '#8D493A',
-      borderWidth: 1,
-      borderRadius: 10,
-      padding: 10,
-      backgroundColor: '#FFF',
-      color: '#333',
-      fontSize: 16,
-      textAlignVertical: 'top', // لضبط النص في الأعلى
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 5,
-      height: 100,
-      width: '100%', // توسيع العرض ليكون بعرض الحاوية بالكامل
+    reportIcon: {
+      position: 'absolute', // Ensures the icon is positioned absolutely
+      top: 0, // Adjusts the icon to be above the postContainer
+      right: 0, // Adjusts the icon to be on the top-right corner
+      width: 20,
+      height: 20,
+      zIndex: 1, // Ensures the icon is above other content
     },
     inputContainer: {
       width: '100%',

@@ -280,13 +280,23 @@ const renderPost = ({ item }) => (
       
           <View style={styles.profileHeader}>
             <View style={[styles.topFrame, { backgroundColor: slopeColor }]}>
-              <TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
+
+
+              {isCurrentUser && 
+              (<TouchableOpacity style={styles.changeColorButton} onPress={changeSlopeColor}>
                 <Icon name="paint-brush" size={20} color="#fff" />
               </TouchableOpacity>
+              )}
+           
+
               {isCurrentUser && UserType === 'Designer' && (
+                
+
             <TouchableOpacity style={styles.chart} onPress={() => navigation.navigate('ChartScreen', { userId: route.params.userId, username: profileUserName, userImgUrl: profileImageUrl, profileViews: profileViews })}>
               <Icon name="bar-chart" size={22} color="#fff" />
             </TouchableOpacity>
+
+
           )}
               <View style={styles.profileImageContainer}>
               <Image
@@ -381,7 +391,7 @@ const renderPost = ({ item }) => (
               </View>
 
               {!isCurrentUser && (
-  <View style={styles.actionButtonsContainer}>
+                   <View style={styles.actionButtonsContainer}>
     <TouchableOpacity
       style={styles.messageButton}
       onPress={handleSendMessage}
@@ -404,8 +414,8 @@ const renderPost = ({ item }) => (
   />
 </TouchableOpacity>
 
-  </View>
-)}
+                   </View>
+                  )}
 
             </View>
             
@@ -462,6 +472,7 @@ const renderPost = ({ item }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+
     
   },
 
@@ -474,7 +485,7 @@ const styles = StyleSheet.create({
   profileHeader: {
     alignItems: 'center',
     backgroundColor: '#f4f4f4',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
     borderBottomColor: '#ddd',
   },
   topFrame: {//topFrame
@@ -494,7 +505,6 @@ const styles = StyleSheet.create({
   chart : {
     position: 'absolute',
     top: 1,
-   
     left: 40,
     padding: 10,
   },
@@ -521,7 +531,7 @@ const styles = StyleSheet.create({
     left: 10,
   },
   profileContent: {
-    padding: 20,
+    padding: 10,
     alignItems: 'center',
   },
   userInfoContainer: {
@@ -540,7 +550,7 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     flexDirection: 'row',
-    marginVertical: 10,
+    marginVertical: 5,
   },
   locationItem: {
     flexDirection: 'row',
@@ -573,7 +583,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   bio: {
-    marginTop: 0,
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
@@ -592,11 +601,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 20,
   },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    marginTop: 20,
-    justifyContent: 'center',
-  },
+
   messageButton: {
     padding: 10,
     borderRadius: 5,
@@ -605,8 +610,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   messageButtonImage: {
-    width: 27, // يمكنك ضبط الحجم حسب الحاجة
-    height: 25, // يمكنك ضبط الحجم حسب الحاجة
+    width: 25, // يمكنك ضبط الحجم حسب الحاجة
+    height: 20, // يمكنك ضبط الحجم حسب الحاجة
   },
 
 
@@ -631,7 +636,7 @@ const styles = StyleSheet.create({
   notFollowing: {
   },
   postsContainer: {
-    marginTop: 1,
+    marginTop: 0,
   },
   lineContainer: {
     flexDirection: 'row',

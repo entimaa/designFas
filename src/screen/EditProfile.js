@@ -54,7 +54,7 @@ const EditProfile = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [5,5],
       quality: 1,
     });
     if (!result.cancelled) {
@@ -66,7 +66,7 @@ const EditProfile = () => {
     let result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [5,5],
       quality: 1,
     });
     if (!result.cancelled) {
@@ -176,13 +176,13 @@ const EditProfile = () => {
         const postsSnapshot = await getDocs(postsQuery);
         for (const postDoc of postsSnapshot.docs) {
           const postRef = doc(db, "postsDesigner", postDoc.id);
-  
+        
           // Update user name and image in the post itself
           await updateDoc(postRef, {
             username: name,
             userimg: imageUrl
           });
-  
+        
           // Update user name and image in comments field of the post
           const postData = postDoc.data();
           const updatedComments = postData.comments.map(comment => {
@@ -191,9 +191,9 @@ const EditProfile = () => {
             }
             return comment;
           });
-  
           await updateDoc(postRef, { comments: updatedComments });
         }
+        
   
         // Update user name and image in followers collection
         const followersQuery = query(collection(db, "followers"), where("userFollowers.userId", "==", user.uid));

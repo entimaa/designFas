@@ -15,6 +15,9 @@ const PostsSection = ({ navigation }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [showImageSearch, setShowImageSearch] = useState(false); // State to toggle image search modal
 
+
+
+  
   // استرجاع المنشورات بناءً على الفئة واسم المستخدم
   const fetchPosts = async (categoryFilter, usernameFilter) => {
     if (!user || !user.uid) {
@@ -177,7 +180,7 @@ const PostsSection = ({ navigation }) => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Search by category or username"
+          placeholder="Search by category or username color"
           placeholderTextColor="#888"
           value={searchTerm}
           onChangeText={handleSearch}

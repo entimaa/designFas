@@ -87,7 +87,7 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <ImageBackground 
-      source={require('../pic/WhatsApp Image 2024-08-28 at 14.27.28.jpeg')} 
+      source={require('../pic/women5.jpeg')} 
       style={styles.container}
     >
       <View style={styles.overlay}>
