@@ -161,7 +161,7 @@ const ReportListScreen = () => {
         ))}
       </ScrollView>
 
-      {/* Snackbar لإظهار الإشعارات */}
+      {/* !----<< Snackbar لإظهار الإشعارات */}
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 270, // Adjust the height as needed
+    height: 270, // 
     borderRadius: 7,
     marginBottom: 10,
   },

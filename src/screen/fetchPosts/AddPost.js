@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Image,
-  Alert,
-  TextInput,
-  StyleSheet,
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Image, Alert, TextInput, StyleSheet, ActivityIndicator, Text, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform,} from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import * as ImagePicker from "expo-image-picker";
 import { storage, db } from "../../../data/DataFirebase.js";
@@ -34,33 +22,30 @@ const AddPostComponent = ({ toggleModal }) => {
   const [categories, setCategories] = useState([]);
   const [selectedButton, setSelectedButton] = useState(null); 
 
-  useEffect(() => {
-    const fetchCategories = () => {
+  useEffect(() => {//!تنفيذ العمليه مره واحددده
+    const fCategories = () => {
       try {
-        const categoriesCollection = collection(db, "categories");
-        const unsubscribe = onSnapshot(categoriesCollection, (snapshot) => {
-          const categoriesData = snapshot.docs.map((doc) => ({
+        const categoriesColl= collection(db, "categories");
+        const unsubscribe = onSnapshot(categoriesColl, (snapshot) => {//!التغيرات المباشره عنجد التغير في البيانات :
+          const categorData = snapshot.docs.map((doc) => ({
             id: doc.id,
             name: doc.data().name,
           }));
-          setCategories(categoriesData);
+          setCategories(categorData);
         });
 
         return () => unsubscribe();
       } catch (error) {
         console.error("Error fetching categories:", error);
-        Alert.alert(
-          "Fetch Error",
-          "Failed to fetch categories. Please try again later."
-        );
+        Alert.alert(  "Fetch Error",  "Failed to fetch categories. Please try again later.");
       }
     };
 
-    fetchCategories();
+    fCategories();
   }, []);
 
   const pickImage = async () => {
-    setSelectedButton('pick'); // Set the selected button to 'pick'
+  setSelectedButton('pick'); // التقاط'pick'
 
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -71,11 +56,11 @@ const AddPostComponent = ({ toggleModal }) => {
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
-    setSelectedButton(null); // Reset selected button
+    setSelectedButton(null); 
   };
 
   const takeImage = async () => {
-    setSelectedButton('take'); // Set the selected button to 'take'
+    setSelectedButton('take'); // اخذذ 'take'
     let result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -85,7 +70,7 @@ const AddPostComponent = ({ toggleModal }) => {
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
-    setSelectedButton(null); // Reset selected button
+    setSelectedButton(null); 
   };
 
   const uploadImage = async () => {
@@ -110,11 +95,8 @@ const AddPostComponent = ({ toggleModal }) => {
     try {
       const response = await fetch(image);
       const blob = await response.blob();
-
       const storageRef = ref(storage, `posts/${filename}`);
-
       const uploadTask = uploadBytesResumable(storageRef, blob);
-
       uploadTask.on(
         "state_changed",
         (snapshot) => {
@@ -125,10 +107,7 @@ const AddPostComponent = ({ toggleModal }) => {
         (error) => {
           console.error(error);
           setUploading(false);
-          Alert.alert(
-            "Upload Error",
-            "Failed to upload image. Please try again later."
-          );
+          Alert.alert( "Upload Error",  "Failed to upload image. Please try again later." );
         },
         async () => {
           const url = await getDownloadURL(uploadTask.snapshot.ref);
@@ -151,6 +130,7 @@ const AddPostComponent = ({ toggleModal }) => {
                 userimg: userImgUrl,
                 category: category,
                 color: color,
+                timestamp: new Date(), 
               });
 
               setImage(null);
@@ -187,7 +167,7 @@ const AddPostComponent = ({ toggleModal }) => {
     setImage(null);
   };
 
-  const toggleOptions = () => {
+  const Options = () => {
     setShowOptions(!showOptions);
   };
 
@@ -200,14 +180,8 @@ const AddPostComponent = ({ toggleModal }) => {
     setColor(text);
   };
 
-  const renderContent = () => {
+  const seclectPost = () => {
     return (
-      <>
-        {userType !== "Designer" ? (
-          <Text style={styles.errorMessage}>
-            Only Designers can post content.
-          </Text>
-        ) : (
           <>
             {image && (
               <Image
@@ -242,7 +216,7 @@ const AddPostComponent = ({ toggleModal }) => {
                   onChangeText={handleColorChange}
                 />
                 <TouchableOpacity
-                  onPress={toggleOptions}
+                  onPress={Options}
                   style={styles.categoryInput}
                   activeOpacity={0.8}
                 >
@@ -311,8 +285,8 @@ const AddPostComponent = ({ toggleModal }) => {
              </View>
             )}
           </>
-        )}
-      </>
+        
+     
     );
   };
   
@@ -324,7 +298,7 @@ const AddPostComponent = ({ toggleModal }) => {
       keyboardVerticalOffset={100}
     >
           <View style={styles.container}>
-        {renderContent()}
+        {seclectPost()}
       </View>
     </KeyboardAvoidingView>
   );
@@ -343,43 +317,41 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
   
-    marginRight: 8,
+    marginRight: 8,//!اطار الانبت تيكست
     padding: 10,
     borderWidth: 1,
     borderColor: "#A67B5B",
     borderRadius: 4,
   },
-  inputFull: {
+  inputFull: {//color -- categroyy
     marginBottom: 12,
     padding: 10,
     borderWidth: 1,
     borderColor: "#A67B5B",
     borderRadius: 4,
   },
-  categoryInput: {
+  categoryInput: {//!!categoryy اختيار
     marginBottom: 12,
     padding: 10,
     borderWidth: 1,
     borderColor: "#A67B5B",
     borderRadius: 4,
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
   },
   categoryText: {
-    color:'#3C4048',
+    color:'#3C4048',//سكني فاتحح -
     fontSize: 16,
   },
-  optionsContainer: {
+  optionsContainer: {//!اطار الخيارات مع ظهورهن
     maxHeight: 200,
     borderWidth: 1,
     borderColor: "#A67B5B",
     borderRadius: 4,
   },
   flatList: {
-    maxHeight: 200,
   },
-  option: {
+  option: {//!!optionn name ctaegoryy --
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
@@ -387,56 +359,47 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
   },
-  fullImage: {
+  fullImage: {//!show image 
     width: "100%",
     height: 200,
     marginBottom: 12,
     borderRadius: 8,
-    position: "relative", // Make sure the parent is relative
   },
-  buttonContainer: {
+  buttonContainer: {//خيارات اختبار صوره او من العرض
     
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row', // Arrange buttons horizontally
   },
-  iconButtonContainer: {
-    position: 'relative', // Container to control the stacking of buttons
-  },
-  iconButton: {
-   
+  
+  iconButton: {//take - pike - image
     right:50,
-    width: 150, // زيادة عرض الزر
-    height: 150, // زيادة ارتفاع الزر
-    borderRadius: 100, // نصف العرض والارتفاع لجعل الزر دائري
-    backgroundColor: "#D0B8A8", // تغيير اللون الخلفي
+    width: 150, // !زيادة عرض الزر
+    height: 150, // !زيادة ارتفاع الزر
+    borderRadius: 100, 
+    backgroundColor: "#D0B8A8", //!! تغيير اللون الخلفي
     justifyContent: "center",
     alignItems: "center",
     elevation: 30,
     borderWidth : 1.5,
      borderColor: "#fff", 
-     shadowColor: "#fff", // لون الظل على iOS
+     shadowColor: "#fff", //! لون الظل على iOS
   
   },
 
   iconButtonOverlap: {
-    position: 'absolute',
-    left: 66, // Adjust to overlap the button below
+    position: 'absolute',//!فوق بعض
+    left: 66, //*الكااميرا على جهه المعرض --
   },
 
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    marginTop: 10,
-  },
+ 
   uploadButton: {
     backgroundColor: "#A67B5B",
     borderRadius: 20,
     marginVertical: 10,
-    paddingVertical: 10, // Adjust vertical padding as needed
-    paddingHorizontal: 60, // Adjust horizontal padding to reduce button width
-    alignSelf: 'center', // Center the button horizontally
+    paddingVertical: 10, 
+    paddingHorizontal: 60, 
+    alignSelf: 'center', 
   },
   uploadButtonText: {
     fontSize: 16,
@@ -453,16 +416,11 @@ const styles = StyleSheet.create({
   activityIndicator: {
     marginVertical: 20,
   },
-  errorMessage: {
-    color: "red",
-    marginVertical: 12,
-    textAlign: "center",
-  },
-  avoidingView: {
+
+  avoidingView: {//!يكون بالنص الاكميرا والمعرض بشكل ثابت ملئ الشاشه
     flex: 1,
   },
 });
-
 
 
 export default AddPostComponent;

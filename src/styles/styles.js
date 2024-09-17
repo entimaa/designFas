@@ -1,140 +1,100 @@
-import { StyleSheet,Dimensions } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
-export  const styles = StyleSheet.create({
-    container: {
-      flex: 2,
-      padding:16,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor:'#AA98A9',
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-      color: '#fff', // Change the text color to white
-    },
- registerOptionLoginScreen:
- {
-  justifyContent: 'center',
-      flexDirection: 'row',
-      width: '100%',
-      height: '6%',
- },
- input: {
-  paddingTop: 20,
-  paddingBottom: 10,
-  width: 225,
-  fontSize: 20,
-  borderBottomWidth: 1,
-  borderBottomColor: '#000',
-  marginBottom: 10,
-  textAlign: 'center',
-},
-    errorText: {
-      color: 'red',
-      marginBottom: 10,
-    },
-   
-    loginButtonText:{
-      color: '#fff',
-      alignSelf: 'center',
-      fontSize: 18,
-    },
-    loginText: {
-      marginTop: 5,
-      color: '#fff', // Change the text color to white
-      textDecorationLine: 'underline',
-      textAlign: 'center',
-      fontSize: 14,
-    },
-    imagest:{
-      backgroundColor: '#74C365',
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      justifyContent: 'center',
-      top: '2%',
-      margin:30
-     },
-      item: {
-      flex: 1,
-      margin: 4,
-      
-    },
-    image: {
-      width: width * 0.7,
-      height: width * 0.9,
-      resizeMode: 'cover',
-      
-    },
 
-    loginButtonCustom: {
-      height: 44,
-      width: '44%', // تحديد العرض بالنسبة المئوية
-      backgroundColor: '#000', // لون برتقالي مميز
-      borderRadius: 25, // زوايا مستديرة
-      justifyContent: 'center', // محاذاة النص في الوسط عمودياً
-      alignItems: 'center', // محاذاة النص في الوسط أفقياً
-      marginTop: 20,
-    },
-
-    loginButtonTextCustom: {
-      color: '#fff',
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-    radioText:{
-      fontSize:15
-    },
-    radio:{
-      height:25,
-      width:25,
-      borderColor:'#584858',
-      borderWidth:2,
-      borderRadius:20,
-      margin:10
-    },
-    radioMain:{
-      flexDirection:'row',
-      alignItems: 'center',
-      padding:1,
-      
-      
-
-    },
-    radioDot:{
-      backgroundColor:'#584858',
-      height:17,
-      width:17,
-      borderRadius:30,
-      margin:2//dot in redio
-    },
-    loginButton:{
-      height: 40, // زيادة ارتفاع المربع
-      width: '67%', // تحديد عرض المربع بنسبة مئوية من العرض الكلي للشاشة
-      backgroundColor: '#584858', // تغيير لون الخلفية إلى اللون البرتقالي
-      borderRadius: 18, // زيادة قوس الزاوية لجعل المربع أكثر دائرية
-      justifyContent: 'center', // محاذاة النص في الوسط عمودياً
-      alignItems: 'center', 
-      textAlign:'center'// محاذاة النص في الوسط أفقياً
-      
-    
-     },
-     buttonTitleStyle: {
-      color: '#fff',
-      textAlign: 'center', // Center align text horizontally
-      fontWeight: 'bold',
-    },
-     buttonStyle: {
-      
-      backgroundColor: '#584858',
-      borderRadius: 18,
-    },
-    animation: {
-      width: 150,
-      height: 150,
-      marginBottom: 20,
-    }
-  });
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#DFD3C3',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#603F26',
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  imageContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  image: {
+    width: width,
+    height: '100%',
+    resizeMode: 'cover',
+    borderWidth: 0.7,
+    borderColor: 'black',
+  },
+  formContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    padding: 20,
+    backgroundColor: '#DFD3C3',
+    borderTopLeftRadius: 70,
+    borderTopRightRadius: 70//!covvven
+    ,
+  },
+  inputGroup: {
+    width: '100%',
+    marginBottom: 17,
+  },
+  inputLabel: {
+    fontSize: 16,
+    color: '#603F26',
+    marginBottom: 5,
+    fontWeight: 'bold',
+  },
+  input: {
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 25,
+    borderColor: '#fff',
+    borderWidth: 1,
+    backgroundColor: '#fff',
+    color: '#000',
+    fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 5,
+  },
+  loginButtonCustom: {
+    height: 50,
+    width: '100%',
+    backgroundColor: '#603F26',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loginButtonTextC: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  loginText: {
+    marginTop: 10,
+    color: '#603F26',
+    textDecorationLine: 'underline',
+    fontSize: 14,
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 10,
+    top: 15,
+    height: 24,
+    width: 24,
+  },
+  eyeImage: {
+    height: '100%',
+    width: '100%',
+  },
+});

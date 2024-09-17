@@ -1,4 +1,3 @@
-// src/screen/Admin/CategoryList.js
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from "react-native";
 import { db } from '../../../data/DataFirebase'; // تأكد من المسار الصحيح
@@ -12,12 +11,12 @@ const CategoryList = ({ navigation }) => {
   useEffect(() => {
     fetchCategories();
 
-    // إضافة مستمع لإعادة تحميل الفئات عند العودة إلى الشاشة
+    // !إضافة مستمع لإعادة تحميل الفئات عند العودة إلى الشاشة
     const unsubscribe = navigation.addListener('focus', () => {
       fetchCategories();
     });
 
-    // تنظيف المستمع عند إلغاء التعلق
+    //! تنظيف المستمع عند إلغاء التعلق
     return unsubscribe;
   }, [navigation]);
 
@@ -39,7 +38,7 @@ const CategoryList = ({ navigation }) => {
 
     try {
       const docRef = await addDoc(collection(db, 'categories'), { name: newCategory });
-      await fetchCategories(); // إعادة تحميل البيانات بعد إضافة الفئة
+      await fetchCategories(); //!! إعادة تحميل البيانات بعد إضافة الفئة
       setNewCategory('');
       Alert.alert('Success', 'Category added successfully.');
     } catch (error) {
@@ -51,7 +50,7 @@ const CategoryList = ({ navigation }) => {
   const handleDeleteCategory = async (id) => {
     try {
       await deleteDoc(doc(db, 'categories', id));
-      await fetchCategories(); // إعادة تحميل البيانات بعد حذف الفئة
+      await fetchCategories(); //!!! إعادة تحميل البيانات بعد حذف الفئة
       Alert.alert('Success', 'Category deleted successfully.');
     } catch (error) {
       console.error('Error deleting category:', error);

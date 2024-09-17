@@ -25,12 +25,13 @@ const ChatList = ({ navigation }) => {
             if (doc.id !== user?.uid) {
               fetchedUsers[doc.id] = {
                 id: doc.id,
-                username: userData.name,
-                userImgUrl: userData.userImgUrl || '',  // Ensure fallback to empty string
+                username: userData.name || '', //!سم المستخدم، مع وجود احتياط إذا كان الاسم غير موجود باستخدام
+                userImgUrl: userData.userImgUrl || '', //!صوره احتياططط 
               };
             }
           });
-          setUsers(prevUsers => ({ ...prevUsers, ...fetchedUsers }));
+          setUsers(prevUsers => ({ ...prevUsers, ...fetchedUsers }));//!قوم بتحديث حالة users عن طريق دمج المستخدمين المسترجعين حديثًا
+                                                                      //! مع المستخدمين الحاليين.
         });
 
         const unsubscribeClient = onSnapshot(clientQuery, (querySnapshot) => {
@@ -40,8 +41,8 @@ const ChatList = ({ navigation }) => {
             if (doc.id !== user?.uid) {
               fetchedUsers[doc.id] = {
                 id: doc.id,
-                username: userData.name,
-                userImgUrl: userData.userImgUrl || '',  // Ensure fallback to empty string
+                username: userData.name || '',  
+                userImgUrl: userData.userImgUrl || '', 
               };
             }
           });
@@ -68,7 +69,9 @@ const ChatList = ({ navigation }) => {
     navigation.navigate('UserProfile', { userId, username, userImgUrl });
   };
 
-  const filteredUsers = Object.values(users).filter(user => user.username.toLowerCase().includes(search.toLowerCase()));
+  const filteredUsers = Object.values(users).filter(user => 
+    (user.username || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   const renderSearchResultItem = ({ item }) => (
     <TouchableOpacity

@@ -1,3 +1,9 @@
+if (!__DEV__) {
+  console.log = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 import React, { useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -7,12 +13,10 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from "../../context/AuthContext";
 import ProfileScreen from "../ProfileScreen";
 import EditProfile from "../EditProfile";
-import Message from "../Massege";
 import Post from "../fetchPosts/Post";
 import AddPost from "../fetchPosts/AddPost";
 import ChatList from '../chat/ChatList';
 import Chat from '../chat/Chat';
-import CommentsScreen from "../fetchPosts/CommentScreen";
 import PostDetailScreen from "../fetchPosts/PostDetailScreen";
 import ActionSheet from 'react-native-actionsheet';
 import ChartScreen from "../ChartScreen";
@@ -21,7 +25,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const ProfileStack = () => {
-  const { user, signOutUser } = useAuth();
+  const { user, signOutUser,deleteUserAndData } = useAuth();
   const navigation = useNavigation();
   const actionSheetRef = useRef();
 
@@ -37,20 +41,33 @@ const ProfileStack = () => {
       Alert.alert('Log Out Error', 'Failed to log out. Please try again later.');
     }
   };
-
   const handleOptionActionSheet = async (index) => {
     if (index === 0) {
-      // Handle account deletion logic
+      // !!DELETE ACCOUNT-------->
       Alert.alert("Delete Account", "Are you sure you want to delete your account?", [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", onPress: () => console.log("Account Deleted") }
+        { 
+          text: "Delete", 
+          onPress: async () => {
+            try {
+              // !!DELETE ALLL DATAAA 
+              await deleteUserAndData(user.uid); // استدعاء دالة حذف الحساب والبيانات
+              await handleSignOut(); // تسجيل خروج المستخدم بعد الحذف
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (error) {
+              console.error('Account Deletion Error: ', error);
+              Alert.alert('Account Deletion Error', 'Failed to delete account. Please try again later.');
+            }
+          } 
+        }
       ]);
     } else if (index === 1) {
-      // Show loading indicator
-
-      try {
+      // !!LOGGOUT---->>
       Alert.alert("Logging Out", "Please wait while we log you out.");
-
+      try {
         await handleSignOut();
       } catch (error) {
         console.error('Log Out Error: ', error);
@@ -59,15 +76,14 @@ const ProfileStack = () => {
     }
   };
 
+
   const showActionSheet = () => {
     actionSheetRef.current?.show();
   };
 
   if (!user) {
-    // If user is not available, show a placeholder or handle accordingly
     return null;
   }
-
   return (
     <>
       <Stack.Navigator>
@@ -75,7 +91,7 @@ const ProfileStack = () => {
           name="ProfileScreen"
           component={ProfileScreen}
           options={{
-            headerShown: false, // Hide the header completely
+            headerShown: false, //! Hide the header compley
           }}
           initialParams={{ userId: user.uid, username: user.displayName }}
         />
@@ -200,7 +216,7 @@ const MainStack = () => {
         name="UserProfile" 
         component={ProfileScreen} 
         options={({ route }) => ({
-          title: route.params ? route.params.username : 'Profile', // عرض اسم المستخدم أو 'Profile'
+          title: route.params ? route.params.username : 'Profile', //!! عرض اسم المستخدم أو 'Profile'
           headerLeft: () => (
             <TouchableOpacity onPress={() => {
               const { fromChatList } = route.params || {};
@@ -238,27 +254,16 @@ const MainStack = () => {
           ),
         })} 
       />
-      <Stack.Screen 
-        name="Comments" 
-        component={CommentsScreen} 
-        options={{
-          title: 'Comments',
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-              <Icon name="chevron-left" size={25} color="#000" />
-            </TouchableOpacity>
-          ),
-        }} 
-      />
+     
       <Stack.Screen 
         name="ChartScreen" 
         component={ChartScreen} 
         options={{
           title: 'Chart Screen',
           headerStyle: {
-            backgroundColor: '#6E42A3', // اللون البنفسجي الغامق
+            backgroundColor: '#6E42A3', //! اللون البنفسجي الغامق
           },
-          headerTintColor: '#fff', // لون النص والأيقونات في شريط التنقل
+          headerTintColor: '#fff', // !لون النص والأيقونات في شريط التنقل
           headerTitleStyle: {
             //fontWeight: 'bold', // تحديد وزن الخط
           },

@@ -81,14 +81,14 @@ const ChartScreen = ({ route }) => {
             stroke: '#e74c3c',
           },
         }}
-        verticalLabelRotation={0} // Keep labels horizontal
-        showValuesOnTopOfBars // Show values on top of bars
-        fromZero // Start the y-axis from zero
-        withInnerLines={false} // Remove grid lines for a cleaner look
+        verticalLabelRotation={0} //! Keep labels
+        showValuesOnTopOfBars // !Show values on top of bars
+        fromZero //! Start the y- from zero
+        withInnerLines={false} //! Remove grid lines for a cleaner look
         style={{
           marginVertical: 16,
           borderRadius: 16,
-          elevation: 5, // Add shadow for a 3D effect
+          elevation: 5, //!!! Add shadow for a 3D effect
         }}
       />
     </View>

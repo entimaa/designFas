@@ -168,22 +168,22 @@ const EditProfile = () => {
           setUserImgUrl(imageUrl);
         }
   
-        // Update user data
+        // Update user
         await setDoc(userDocRef, updatedData, { merge: true });
   
-        // Update user name and image in postsDesigner collection
+        // Update user name -->and image in ---*postsDesigner 
         const postsQuery = query(collection(db, "postsDesigner"), where("userId", "==", user.uid));
         const postsSnapshot = await getDocs(postsQuery);
         for (const postDoc of postsSnapshot.docs) {
           const postRef = doc(db, "postsDesigner", postDoc.id);
         
-          // Update user name and image in the post itself
+          // Update user name --> image in the post 
           await updateDoc(postRef, {
             username: name,
             userimg: imageUrl
           });
         
-          // Update user name and image in comments field of the post
+          //! Update user--> name and--> image in-> comments field of the* post
           const postData = postDoc.data();
           const updatedComments = postData.comments.map(comment => {
             if (comment.userId === user.uid) {
@@ -194,8 +194,8 @@ const EditProfile = () => {
           await updateDoc(postRef, { comments: updatedComments });
         }
         
-  
-        // Update user name and image in followers collection
+  // TODO--------------------------------------------------------------------------------------
+        // !!Update user name -->> and image in followers 
         const followersQuery = query(collection(db, "followers"), where("userFollowers.userId", "==", user.uid));
         const followersSnapshot = await getDocs(followersQuery);
         for (const followerDoc of followersSnapshot.docs) {
@@ -210,7 +210,7 @@ const EditProfile = () => {
           await updateDoc(followerRef, { userFollowers: updatedFollowers });
         }
   
-        // Update user name and image in following collection
+        // !!Update user name and--->>>> image in following c
         const followingQuery = query(collection(db, "following"), where("userFollowing.userId", "==", user.uid));
         const followingSnapshot = await getDocs(followingQuery);
         for (const followingDoc of followingSnapshot.docs) {
@@ -224,7 +224,7 @@ const EditProfile = () => {
           });
           await updateDoc(followingRef, { userFollowing: updatedFollowing });
         }
-  
+  //TODO---------------------------------------------------------------------------------------->>>>
         // Reload user data
         const updatedUserDoc = await getDoc(userDocRef);
         if (updatedUserDoc.exists()) {
@@ -260,7 +260,14 @@ const EditProfile = () => {
       deleteImage();
     }
   };
+  const showActionSheet = () => {
+    actionSheetRef.current.show();
+  };
 
+
+
+  //TODO-----------------------------------------------------------------------
+  //?----------------------------------------------notttt forget this---------------------
   const deleteAccount = async () => {
     if (user) {
       try {
@@ -292,9 +299,9 @@ const EditProfile = () => {
       Alert.alert('Logout Error', 'Failed to log out. Please try again later.');
     }
   };
-  const showActionSheet = () => {
-    actionSheetRef.current.show();
-  };
+
+  
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView contentContainerStyle={styles.container}>
@@ -438,9 +445,9 @@ const styles = StyleSheet.create({
   userImg: {
     height: 150,
     width: 150,
-    borderRadius: 75, // Ensure the image is circular
+    borderRadius: 75,
   },
-  blurView: {
+  blurView: {//!!!TEXT info IMAGE SELECT
     position: 'absolute',
     top: 0,
     left: 0,

@@ -1,6 +1,14 @@
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../data/DataFirebase'; // Adjust path to your Firebase config
-import { startOfWeek, endOfWeek, isWithinInterval, format, parseISO } from 'date-fns';
+import { db } from '../../data/DataFirebase'; 
+import { startOfWeek, endOfWeek, isWithinInterval, format,  } from 'date-fns';//!!כדי לחשב את אחוז הביקורים עבור כל יום במהלך השבוע הנוכחי
+
+//! -->> THIS JUST TO USER DESIGNER >>--
+/*
+//*startOfWeek: --->>  لحساب بداية الأسبوع بناءً على التاريخ الحالي.
+//*endOfWeek:---> لحساب نهاية الأسبوع بناءً على التاريخ  الحالي.
+//*isWithinInterval: ---->>للتحقق مما إذا كانت زيارة معينة تقع ضمن نطاق الأسبوع الحالي.
+//*format:---->  لتحويل الكائنات Date إلى تنسيق yyyy-MM-dd.
+*/
 
 const fetchAndProcessData = async (userId) => {
   const userRef = doc(db, 'userDesigner', userId);
@@ -11,20 +19,29 @@ const fetchAndProcessData = async (userId) => {
   }
 
   const { visitDates } = userDoc.data();
+  //!visitDates מופק מנתוני משתמש. אם אין ביקורים, הנתונים היומיים מאתחלים באפס ביקורים.
   if (!visitDates || visitDates.length === 0) {
-    // Initialize the daily data with zero visits
     const now = new Date();
-    const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 0 }); // Sunday start of the week
+
+    
+    //! يتم حساب بداية الأسبوع الحالي باستخدام startOfWeek.
+    //!!يتم إنشاء كائن dailyData الذي يحتوي على تواريخ الأسبوع الحالي مع تعيين عدد الزيارات لكل يوم بصفر. 
+
+    const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 0 }); // !Sunday start-->> the week
     const dailyData = {};
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfCurrentWeek);
       date.setDate(date.getDate() + i);
       const formattedDate = format(date, 'yyyy-MM-dd');
-      dailyData[formattedDate] = { totalVisits: 0 }; // Initialize with zero visits
+      dailyData[formattedDate] = { totalVisits: 0 }; // !!--> with zero visits
     }
 
     // Return zero percentage for all days
+    /**
+     * معالجة البيانات اليومية عندما لا تكون هناك زيارات أو عندما تكون بيانات الزيارات فارغة. يتم تنفيذ ذلك من خلال 
+     * إنشاء كائن يحتوي على تواريخ الأسبوع الحالي وجعل نسبة الزيارات اليومية "0.00" نظرًا لعدم وجود زيارات.
+     */
     const processedData = Object.entries(dailyData).map(([date, data]) => ({
       date,
       percentage: '0.00',
@@ -33,32 +50,32 @@ const fetchAndProcessData = async (userId) => {
     return processedData;
   }
 
-  // Get the current week range
+  //?? Get the current week range
   const now = new Date();
-  const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 0 }); // Sunday start of the week
-  const endOfCurrentWeek = endOfWeek(now, { weekStartsOn: 0 }); // Sunday end of the week
-
+  const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 0 }); // Sunday start  week
+  const endOfCurrentWeek = endOfWeek(now, { weekStartsOn: 0 }); // Sunday end week
   console.log('Start of week:', startOfCurrentWeek);
   console.log('End of week:', endOfCurrentWeek);
 
-  // Filter visits within the current week
+  // !Filter visits within the current week
+  //!يتم تصفية الزيارات لإظهار تلك التي حدثت فقط خلال الأسبوع الحالي باستخدام isWithinInterval.
   const filteredVisits = visitDates.filter(({ timestamp }) => {
     const visitDate = timestamp.toDate();
     return isWithinInterval(visitDate, { start: startOfCurrentWeek, end: endOfCurrentWeek });
   });
+  console.log('Visits:', filteredVisits);
 
-  console.log('Filtered Visits:', filteredVisits);
-
-  // Group visits by day
+  // !!Group visits --<< day
   const dailyData = {};
   
   for (let i = 0; i < 7; i++) {
     const date = new Date(startOfCurrentWeek);
     date.setDate(date.getDate() + i);
     const formattedDate = format(date, 'yyyy-MM-dd');
-    dailyData[formattedDate] = { totalVisits: 0 }; // Initialize with zero visits
+    dailyData[formattedDate] = { totalVisits: 0 }; //! with zero visit
   }
 
+//!!يتم زيادة عدد الزيارات اليومية بناءً على الزيارات المفلترة.
   filteredVisits.forEach(({ timestamp }) => {
     const date = format(timestamp.toDate(), 'yyyy-MM-dd');
     if (dailyData[date]) {
@@ -66,14 +83,16 @@ const fetchAndProcessData = async (userId) => {
     }
   });
 
-  console.log('Daily Data:', dailyData);
+  console.log('DailyDATTTA------->>>:', dailyData);
 
-  // Calculate total visits for the week
+  // TODO-->>Calculate total visits for the week
+  //!تم جمع إجمالي عدد الزيارات للأسبوع.
   const totalVisitsForWeek = Object.values(dailyData).reduce((acc, data) => acc + data.totalVisits, 0);
 
-  console.log('Total Visits for Week:', totalVisitsForWeek);
+  console.log('Total Visits Week:', totalVisitsForWeek);
 
-  // Calculate percentages
+  //! Calculate percentages אחוזים--->>
+  //!!حساب النسب المئوية للزيارات اليومية:
   const processedData = Object.entries(dailyData).map(([date, data]) => {
     const totalVisits = data.totalVisits;
     const visitorPercentages = {

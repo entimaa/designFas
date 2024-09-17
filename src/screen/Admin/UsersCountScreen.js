@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../data/DataFirebase";
-import { useNavigation } from '@react-navigation/native'; // استيراد useNavigation
-import Ionicons from 'react-native-vector-icons/Ionicons'; // استيراد أيقونة Ionicons
+import { useNavigation } from '@react-navigation/native'; //
+import Ionicons from 'react-native-vector-icons/Ionicons'; 
 
 const UsersCountScreen = () => {
   const [userClientCount, setUserClientCount] = useState(0);
   const [userDesignerCount, setUserDesignerCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
-  const navigation = useNavigation(); // تعريف navigation
+  const navigation = useNavigation(); 
 
   useEffect(() => {
     const fetchUsersCount = async () => {
@@ -61,10 +61,10 @@ const UsersCountScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "flex-start", // وضع المحتوى في الأعلى
+    justifyContent: "flex-start", 
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#FAEDCE", // Light beige background
+    backgroundColor: "#FAEDCE", // Light-beige 
   },
   backButton: {
     alignSelf: "flex-start",
@@ -75,11 +75,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 24,
-    color: "#603F26", // Dark brown color
-    textAlign: "center", // Center the title
+    color: "#603F26", //! Dark-brown 
+    textAlign: "center", //! Center-title
   },
   countContainer: {
-    width: "90%", // Adjust width for better alignment
+    width: "90%", 
     paddingHorizontal: 20,
   },
   countBox: {
@@ -94,20 +94,20 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#d3b08c", // Honey color border
-    overflow: "hidden", // Ensure border radius is applied
+    borderColor: "#d3b08c", 
+    overflow: "hidden", 
   },
   label: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#FFDBB5", // Dark brown color
+    color: "#FFDBB5", // DarkB
     marginBottom: 10,
-    textTransform: "uppercase", // Uppercase labels for elegance
+    textTransform: "uppercase", 
   },
   count: {
     fontSize: 36,
     fontWeight: "bold",
-    color: "#FFDBB5", // Dark brown color
+    color: "#FFDBB5", 
   },
 });
 

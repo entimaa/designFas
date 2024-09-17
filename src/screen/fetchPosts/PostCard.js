@@ -64,7 +64,7 @@ const [isInputVisible, setIsInputVisible] = useState(false);
     setHeartColor(likedByUser ? 'red' : '#000');
   }, [likedByUser]);
 
-  const toggleHeartColor = async () => {
+  const HeartColor = async () => {
     const postRef = doc(db, 'postsDesigner', post.id);
     try {
       if (likedByUser) {
@@ -108,7 +108,7 @@ const [isInputVisible, setIsInputVisible] = useState(false);
     }
   };
   
-  const toggleDislikeColor = async () => {
+  const DislikeColor = async () => {
     const postRef = doc(db, 'postsDesigner', post.id);
   
     try {
@@ -200,7 +200,7 @@ const [isInputVisible, setIsInputVisible] = useState(false);
       id: new Date().toISOString(),
       userId: user.uid,
       username: userName || 'USER',
-      userImgUrl: userImgUrl || '../../pic/avtar.png',
+      userImgUrl: userImgUrl || null,
       comment: newComment,
       timestamp: new Date().toISOString(),
     };
@@ -288,7 +288,6 @@ const handleReportSubmit = async () => {
   }
 };
 */
-
 
 
 
@@ -389,12 +388,12 @@ const handleReportSubmit = async () => {
         <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
         <View style={styles.separator}></View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity onPress={toggleHeartColor} style={styles.iconButton}>
+          <TouchableOpacity onPress={HeartColor} style={styles.iconButton}>
           <Icon name={likedByUser ? "heart" : "heart-o"} size={20} color={heartColor} />
             <Text style={styles.iconText}>{likesCount} likes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={toggleDislikeColor} style={styles.iconButton}>
+          <TouchableOpacity onPress={DislikeColor} style={styles.iconButton}>
         <Icon name={dislikedByUser ? "thumbs-down" : "thumbs-o-down"} size={20} color={dislikeColor} />
         <Text style={styles.iconText}>{dislikesCount}</Text>
       </TouchableOpacity>
@@ -474,8 +473,7 @@ const handleReportSubmit = async () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#D0B8A8',
-    flex: 1,
-    padding: 10,
+    padding: 10,//!size all covv
   },
   card: {
     backgroundColor: '#F8EDE3',
@@ -488,13 +486,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  username: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
   
-  userImg: {
+  userImg: {//!img user profile 
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -526,7 +529,6 @@ const styles = StyleSheet.create({
     height: 450,
     borderRadius: 8,
     marginVertical: 10,
-    resizeMode: 'cover', // Or 'contain' depending on your preference
   },
   postContent: {
     fontSize: 16,
@@ -540,11 +542,11 @@ const styles = StyleSheet.create({
   iconContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center', // Optionally ensures icons are aligned vertically
+    alignItems: 'center', //
   },
   iconButton: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    //lignItems: 'stretch',
   },
   iconText: {
     marginLeft: 5,
@@ -554,8 +556,8 @@ const styles = StyleSheet.create({
     left:37
   },
   reportIcon: {
-    position: 'absolute', // Ensures the icon is positioned absolutely
-    top: 0, // Adjusts the icon to be above the postContainer
+    position: 'absolute', 
+    top: 0, 
     right: 0, // Adjusts the icon to be on the top-right corner
     width: 20,
     height: 20,
@@ -602,81 +604,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modal: {
+  modal: {//! show the mosle comments in end screenn 
     justifyContent: 'flex-end',
     margin: 0,
   },
   modalContent: {
     backgroundColor: '#F8EDE3',
-    backgroundColor: '#F8EDE3',
+   // backgroundColor: '#F8EDE3',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     padding: 20,
     height: '80%',
     justifyContent: 'space-between',
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // خلفية مظللة
-  },
-  modalContentreport: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 15,
-    padding: 20,
-    width: '90%', // عرض أقل من الشاشة
-    maxWidth: 500,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-  },
-  inputContainer: {
-    width: '100%',
-    justifyContent: 'space-between', // لضبط الأزرار بشكل متباعد
-    flexDirection: 'row', // لجعل الأزرار بجانب بعضها أفقياً
-  },
-  reportInput: {
-    borderColor: '#8D493A',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    backgroundColor: '#FFF',
-    color: '#333',
-    fontSize: 16,
-    textAlignVertical: 'top', // لضبط النص في الأعلى
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    height: 100,
-    width: '100%', // توسيع العرض ليكون بعرض الحاوية بالكامل
-  },
-  inputContainer: {
-    width: '100%',
-    alignItems: 'center', // لجعل الحقل والأزرار في المنتصف
-    flexDirection: 'column', // ترتيب عمودي للعناصر
-  },
-  buttonsContainer: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', // !توزيع الأزرار بالتساوي
-    marginTop: 10, //! إضافة مسافة فوق الأزرار
-    width: '99%', //! توسيع عرض الأزرار لتتناسب مع الحاوية
-  },
-  iconButtoniconButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1, // لضبط حجم الأزرار لتكون متساوية
-  },
+  
 });
 
 export default PostCard;
+

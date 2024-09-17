@@ -1,9 +1,14 @@
+if (!__DEV__) {
+  console.log = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from '../SplashScreen';
 import LoginScreen from '../LoginScreen';
 import RegisterScreen from '../RegisterScreen';
-import EditProfile from "../EditProfile";
 
 
 const Stack = createStackNavigator();
@@ -21,3 +26,6 @@ const AuthStack = () => {
   );
 };
 export default AuthStack;
+
+
+

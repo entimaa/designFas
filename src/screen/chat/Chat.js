@@ -20,6 +20,8 @@ const Chat = () => {
   const { userId, username } = route.params;
 
   const chatId = user?.uid < userId ? `${user?.uid}_${userId}` : `${userId}_${user?.uid}`;
+  //!يضمن أن معرف المحادثة بين أي مستخدمين سيكون دائمًا نفسه بغض النظر عن ترتيب 
+ //! المستخدمين، وهو أمر مهم لتتبع المحادثات في تطبيقات الدردشة
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({

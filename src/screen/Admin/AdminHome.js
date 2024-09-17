@@ -1,11 +1,10 @@
-// src/screen/Admin/AdminHome.js
 import React from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from '@expo/vector-icons';
 
 const AdminHome = ({ navigation }) => {
-  const { userName } = useAuth(); // Assuming you are getting userName from useAuth context
+  const { userName } = useAuth(); // Assuming you are getting userNam
   const { signOutUser } = useAuth();
 
   const handleSignOut = async () => {
