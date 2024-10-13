@@ -13,7 +13,7 @@ const PostsSection = ({ navigation }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [showImageSearch, setShowImageSearch] = useState(false); 
 
-  // Fetch posts based on category and username
+  // Fetch posts  on category - and  - username - color
   const fetchPosts = async (categoryF, usernameF) => {
     if (!user || !user.uid) {
       setLoading(false);

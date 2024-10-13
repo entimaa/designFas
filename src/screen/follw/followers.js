@@ -8,7 +8,7 @@ const Followers = ({ modalVisible, toggleFollowersModal, followersList }) => {
       animationType="slide"
       transparent={true}
       visible={modalVisible}
-      onRequestClose={toggleFollowersModal}
+      onRequestClose={toggNadnnleFollowersModal}
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>

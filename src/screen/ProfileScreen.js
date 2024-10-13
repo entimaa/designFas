@@ -32,7 +32,7 @@ const ProfileScreen = ({ route }) => {
   const [profileViews, setProfileViews] = useState(0);
   const [slopeColor, setSlopeColor] = useState("#D0B8A8"); // defffult the color
 
-  const isCurrentUser = !route.params || route.params.userId === user.uid;
+  const isCurrentUser = !route.params || route.params.userId === user.uid;//إذا لم يكن هناك أي معلمات تم تمريرها في route
   const UserType = userType;
   /* 
 !if the user logs in a pje profile  , the return will be to the paje from witch he logged in 
@@ -69,8 +69,10 @@ const ProfileScreen = ({ route }) => {
           {
             profileViews: increment(1),
             visitDates: [...(currentData.visitDates || []), visitData],
+            //!ثلاث نقاط يعني اضافه عللى المعرخ 
+            //!بعد الاضافه يتم تحديث
           },
-          { merge: true }
+          { merge: true }//*lمزج
         );
       } catch (error) {
         console.error("Error updating profile views: ", error);
@@ -169,9 +171,15 @@ const ProfileScreen = ({ route }) => {
         await deleteDoc(
           doc(db, "following", user.uid, "userFollowing", userId)
         );
+        /**
+         حذف السجل الذي يُظهر أن المستخدم الحالي (user.uid) يتابع المستخدم الآخر (userId).
+هذا السجل موجود في مجموعة following، حيث يُخزن جميع المستخدمين الذين يتابعهم المستخدم الحالي.  
+         */
         await deleteDoc(
           doc(db, "followers", userId, "userFollowers", user.uid)
         );
+        /**نا نحذف السجل الذي يُظهر أن المستخدم الحالي (user.uid) هو أحد متابعي المستخدم الآخر (userId).
+هذا السجل موجود في مجموعة followers */
         setIsFollowing(false);
 
         //!uupdate follower count

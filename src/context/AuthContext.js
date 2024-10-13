@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
+      if (currentUser) {//! if user findd..
         try {
           let userDocRef = doc(db, "userClient", currentUser.uid);
           let userDoc = await getDoc(userDocRef);
@@ -176,11 +176,11 @@ export const AuthProvider = ({ children }) => {
   const uploadUserProfileImage = async (userId, image) => {
     try {
       const storageRef = ref(storage, `profileImages/${userId}`);
-      await uploadBytes(storageRef, image);
+      await uploadBytes(storageRef, image);//!!تحميل الصوره في داتا الصور 
       const downloadURL = await getDownloadURL(storageRef);
       const collectionPath = userType === "Designer" ? "userDesigner" : "userClient";
-      const userDocRef = doc(db, collectionPath, userId);
-      await setDoc(userDocRef, { userImgUrl: downloadURL }, { merge: true });
+      const userDocRef = doc(db, collectionPath, userId)//* يتسيرت هفنياه لمصمخ فايرر بيس
+      await setDoc(userDocRef, { userImgUrl: downloadURL }, { merge: true });//*يتسبرت نتونيم حدشيم ام هو كيم از يعتخن ام لو از يتسيرت نتنونيم حدشيم
       setUserImgUrl(downloadURL);
     } catch (error) {
       console.error("Error uploading profile image:", error);
@@ -208,7 +208,7 @@ export const AuthProvider = ({ children }) => {
         postsQuerySnapshot.forEach((postDoc) => {
           batch.delete(doc(db, "postsDesigner", postDoc.id));
         });
-        await batch.commit();
+        await batch.commit();//*لاحر هوسفت كل هبعولوت يخوليم لبتسع اوتو بامتسعوت زه
         console.log(`All posts for user ${userId} deleted from postsDesigner`);
 
         const chatsQuerySnapshot = await getDocs(collection(db, "chats"));
@@ -225,12 +225,12 @@ export const AuthProvider = ({ children }) => {
             messagesBatch.delete(doc(messagesRef, messageDoc.id));
           });
         }
-        await messagesBatch.commit();
+        await messagesBatch.commit();//بعد اضافهالعمليات الحذف وغيرها يتم اضافه هذا السطر بعد اضافته يتم حذف الكل 
       //!!  console.log(`All messages for user ${userId} deleted`);
 
         
 
-        await auth.currentUser.delete();
+        await auth.currentUser.delete();//!!هي دالة تُستخدم لحذف حساب المستخدم الحالي 
         //!!console.log(`User ${userId} deleted successfully.`);
       } else {
         console.log("User does not exist.");

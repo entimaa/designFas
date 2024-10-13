@@ -40,6 +40,7 @@ const [isInputVisible, setIsInputVisible] = useState(false);
       setLikesCount(postData.likesCount || 0);
       setReportCount(postData.reportCount || 0);
 
+
       if (postData.color) {
         setColor(postData.color);
       }
@@ -163,10 +164,10 @@ const [isInputVisible, setIsInputVisible] = useState(false);
     navigation.navigate('UserProfile', { 
       userId: post.userId, 
       username: post.username, 
-      userImgUrl: post.userImgUrl 
+      userImgUrl: post.userImgUrl ,
+
     });
   };
-
   const handleDeletePost = async () => {
     try {
       const postRef = doc(db, 'postsDesigner', post.id);
@@ -336,7 +337,8 @@ const handleReportSubmit = async () => {
     }
   };
   
- 
+  console.log('Timestamp:', post.timestamp);
+
   
 
   return (
@@ -385,7 +387,7 @@ const handleReportSubmit = async () => {
         {post.content ? <Text style={styles.postContent}>{post.content}</Text> : null}
 
         {post.imageUrl && <Image source={{ uri: post.imageUrl }} style={styles.postImage} />}
-        <Text style={styles.postTime}>{new Date(post.timestamp).toLocaleString()}</Text>
+        <Text style={styles.postTime}>  {post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : 'No date available'}</Text>
         <View style={styles.separator}></View>
         <View style={styles.iconContainer}>
           <TouchableOpacity onPress={HeartColor} style={styles.iconButton}>

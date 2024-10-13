@@ -1,26 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  FlatList,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import {View, Text, Image, TouchableOpacity, StyleSheet, Alert, FlatList, TextInput, KeyboardAvoidingView, Platform,} from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import {
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  onSnapshot,
-  deleteDoc,
-  setDoc,
-} from "firebase/firestore";
+import { doc, updateDoc,arrayUnion,arrayRemove,onSnapshot,deleteDoc,setDoc,} from "firebase/firestore";
 import { db } from "../../../data/DataFirebase";
 import { useAuth } from "../../context/AuthContext";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -52,6 +33,8 @@ const PostDetailsScreen = () => {
   console.log(postId);
   console.log(user.uid);
   console.log(postImageUrl);
+  console.log()
+  //console.log(posttimestamp)
 
   /////report modile ////
   const [modalVisible, setModalVisible] = useState(false);
@@ -368,7 +351,7 @@ const PostDetailsScreen = () => {
           <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
         )}
         <Text style={styles.postTime}>
-          {new Date(post.timestamp).toLocaleString()}
+        {post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : 'No date available'}
         </Text>
 
         <View style={styles.separator}></View>
